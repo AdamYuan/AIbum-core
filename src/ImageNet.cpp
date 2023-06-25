@@ -2,9 +2,9 @@
 
 namespace aibum {
 
-ImageNet::ImageNet(const char *param, const char *model) {
-	m_net.load_param(param);
-	m_net.load_model(model);
+ImageNet::ImageNet(const char *model_dir) {
+	m_net.load_param((std::string{model_dir} + "mobilenet_v3.param").c_str());
+	m_net.load_model((std::string{model_dir} + "mobilenet_v3.bin").c_str());
 }
 
 std::vector<ImageTag> ImageNet::GetTags(const cv::Mat &image, unsigned int max_count) {

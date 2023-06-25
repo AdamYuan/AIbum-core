@@ -2,9 +2,9 @@
 
 namespace aibum {
 
-FaceNet::FaceNet(const char *param, const char *model) {
-	m_net.load_param(param);
-	m_net.load_model(model);
+FaceNet::FaceNet(const char *model_dir) {
+	m_net.load_param((std::string{model_dir} + "mobilefacenet.param").c_str());
+	m_net.load_model((std::string{model_dir} + "mobilefacenet.bin").c_str());
 }
 
 std::array<float, 128> FaceNet::GetFeature(const cv::Mat &image) {

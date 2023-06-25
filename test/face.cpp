@@ -7,13 +7,12 @@ int main(int argc, char **argv) {
 	if (argc != 1)
 		return -1;
 
-	aibum::MTCNN mtcnn{"models/det1.param", "models/det1.bin",   "models/det2.param",
-	                   "models/det2.bin",   "models/det3.param", "models/det3.bin"};
+	aibum::MTCNN mtcnn{"models/"};
 
 	cv::Mat image = cv::imread(argv[0]);
 	std::vector<aibum::FaceBox> face_boxes = mtcnn.Detect(image);
 
-	aibum::FaceNet face_net{"models/mobilefacenet.param", "models/mobilefacenet.bin"};
+	aibum::FaceNet face_net{"models/"};
 
 	for (auto face : face_boxes) {
 		cv::Rect rect{face.x, face.y, face.size, face.size};

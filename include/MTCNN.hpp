@@ -27,8 +27,7 @@ private:
 	inline static constexpr float kPreFactor = 0.709f;
 
 public:
-	MTCNN(const char *p_net_param, const char *p_net_model, const char *r_net_param, const char *r_net_model,
-	      const char *o_net_param, const char *o_net_model);
+	explicit MTCNN(const char *model_dir);
 
 	std::vector<FaceBox> Detect(const cv::Mat &image) const;
 

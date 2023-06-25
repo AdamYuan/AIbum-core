@@ -2,16 +2,15 @@
 
 namespace aibum {
 
-MTCNN::MTCNN(const char *p_net_param, const char *p_net_model, const char *r_net_param, const char *r_net_model,
-             const char *o_net_param, const char *o_net_model) {
-	m_p_net.load_param(p_net_param);
-	m_p_net.load_model(p_net_model);
+MTCNN::MTCNN(const char *model_dir) {
+	m_p_net.load_param((std::string{model_dir} + "det1.param").c_str());
+	m_p_net.load_model((std::string{model_dir} + "det1.bin").c_str());
 
-	m_r_net.load_param(r_net_param);
-	m_r_net.load_model(r_net_model);
+	m_r_net.load_param((std::string{model_dir} + "det2.param").c_str());
+	m_r_net.load_model((std::string{model_dir} + "det2.bin").c_str());
 
-	m_o_net.load_param(o_net_param);
-	m_o_net.load_model(o_net_model);
+	m_o_net.load_param((std::string{model_dir} + "det3.param").c_str());
+	m_o_net.load_model((std::string{model_dir} + "det3.bin").c_str());
 }
 
 std::vector<FaceBox> MTCNN::Detect(const cv::Mat &image) const {

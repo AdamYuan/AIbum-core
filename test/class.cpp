@@ -6,7 +6,7 @@ int main(int argc, char **argv) {
 	if (argc != 1)
 		return -1;
 
-	aibum::ImageNet image_net{"models/mobilenet_v3.param", "models/mobilenet_v3.bin"};
+	aibum::ImageNet image_net{"models/"};
 
 	cv::Mat image = cv::imread(argv[0]);
 	auto tags = image_net.GetTags(image, 5);
