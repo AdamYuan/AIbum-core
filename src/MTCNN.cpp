@@ -20,29 +20,29 @@ std::vector<FaceBox> MTCNN::Detect(const cv::Mat &image) const {
 	std::vector<MTCNN::Bbox> bboxes = run_p_net(ncnn_img);
 	if (bboxes.empty())
 		return {};
-	printf("bbox.size() = %ld\n", bboxes.size());
+	// printf("bbox.size() = %ld\n", bboxes.size());
 	nms(&bboxes, kNMSThresholds[0]);
-	printf("bbox.size() = %ld\n", bboxes.size());
+	// printf("bbox.size() = %ld\n", bboxes.size());
 	refine(&bboxes, ncnn_img.h, ncnn_img.w);
-	printf("bbox.size() = %ld\n", bboxes.size());
+	// printf("bbox.size() = %ld\n", bboxes.size());
 
 	bboxes = run_r_net(ncnn_img, std::move(bboxes));
 	if (bboxes.empty())
 		return {};
-	printf("bbox.size() = %ld\n", bboxes.size());
+	// printf("bbox.size() = %ld\n", bboxes.size());
 	nms(&bboxes, kNMSThresholds[1]);
-	printf("bbox.size() = %ld\n", bboxes.size());
+	// printf("bbox.size() = %ld\n", bboxes.size());
 	refine(&bboxes, ncnn_img.h, ncnn_img.w);
-	printf("bbox.size() = %ld\n", bboxes.size());
+	// printf("bbox.size() = %ld\n", bboxes.size());
 
 	bboxes = run_o_net(ncnn_img, std::move(bboxes));
 	if (bboxes.empty())
 		return {};
-	printf("bbox.size() = %ld\n", bboxes.size());
+	// printf("bbox.size() = %ld\n", bboxes.size());
 	refine(&bboxes, ncnn_img.h, ncnn_img.w);
-	printf("bbox.size() = %ld\n", bboxes.size());
+	// printf("bbox.size() = %ld\n", bboxes.size());
 	nms(&bboxes, kNMSThresholds[2], true);
-	printf("bbox.size() = %ld\n", bboxes.size());
+	// printf("bbox.size() = %ld\n", bboxes.size());
 
 	std::vector<FaceBox> ret;
 	ret.reserve(bboxes.size());
@@ -186,11 +186,11 @@ std::vector<MTCNN::Bbox> MTCNN::run_p_net(const ncnn::Mat &image) const {
 		ex.extract("conv4-2", location);
 
 		std::vector<Bbox> bboxes = make_bbox(score, location, scale);
-		printf("P1: %ld\n", bboxes.size());
+		// printf("P1: %ld\n", bboxes.size());
 		nms(&bboxes, kNMSThresholds[0]);
 		ret.insert(ret.end(), bboxes.begin(), bboxes.end());
 
-		printf("P2: %ld\n", bboxes.size());
+		// printf("P2: %ld\n", bboxes.size());
 	}
 	return ret;
 }
