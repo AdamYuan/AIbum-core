@@ -1,4 +1,5 @@
 #include <MTCNN.hpp>
+#include <algorithm>
 
 namespace aibum {
 
@@ -84,48 +85,34 @@ void MTCNN::nms(std::vector<Bbox> *p_bboxes, float overlap_threshold, bool min_m
 	auto bboxes = *p_bboxes;
 	if (bboxes.empty())
 		return;
+
 	std::sort(bboxes.begin(), bboxes.end(), [](const Bbox &l, const Bbox &r) { return l.score < r.score; });
-	std::vector<int> v_pick;
-	int n_pick = 0;
-	// TODO: WTF is this ? just sort it and iterate it
 
-	std::multimap<float, int> v_scores;
-	const int num_boxes = (int)bboxes.size();
-	v_pick.resize(num_boxes);
-	for (int i = 0; i < num_boxes; ++i)
-		v_scores.insert(std::pair<float, int>(bboxes[i].score, i));
+	std::vector<Bbox> ret;
+	ret.reserve(bboxes.size());
 
-	while (!v_scores.empty()) {
-		int last = v_scores.rbegin()->second;
-		v_pick[n_pick++] = last;
-		for (auto it = v_scores.begin(); it != v_scores.end();) {
-			int it_idx = it->second;
+	std::size_t end = bboxes.size();
+	while (end != 0) {
+		ret.push_back(bboxes[--end]);
+		const Bbox &last_box = ret.back();
 
-			int max_x = std::max(bboxes[it_idx].x1, bboxes[last].x1);
-			int max_y = std::max(bboxes[it_idx].y1, bboxes[last].y1);
-			int min_x = std::min(bboxes[it_idx].x2, bboxes[last].x2);
-			int min_y = std::min(bboxes[it_idx].y2, bboxes[last].y2);
-			// maxX1 and maxY1 reuse
-			max_x = std::max(min_x - max_x + 1, 0);
-			max_y = std::max(min_y - max_y + 1, 0);
-			// IOU reuse for the area of two bbox
-			float iou = (float)max_x * (float)max_y;
-			if (min_model)
-				iou = iou / std::min(bboxes[it_idx].area, bboxes[last].area);
-			else
-				iou = iou / (bboxes[it_idx].area + bboxes[last].area - iou);
+		end = std::remove_if(
+		          bboxes.data(), bboxes.data() + end,
+		          [&last_box, min_model, overlap_threshold](const Bbox &cur_box) {
+			          // Calculate overlap area
+			          int ow = std::max(std::min(cur_box.x2, last_box.x2) - std::max(cur_box.x1, last_box.x1) + 1, 0),
+			              oh = std::max(std::min(cur_box.y2, last_box.y2) - std::max(cur_box.y1, last_box.y1) + 1, 0);
+			          float iou = (float)ow * (float)oh;
 
-			if (iou > overlap_threshold)
-				it = v_scores.erase(it);
-			else
-				++it;
-		}
+			          if (min_model)
+				          iou = iou / std::min(cur_box.area, last_box.area);
+			          else
+				          iou = iou / (cur_box.area + last_box.area - iou);
+
+			          return iou > overlap_threshold;
+		          }) -
+		      bboxes.data();
 	}
-
-	v_pick.resize(n_pick);
-	std::vector<Bbox> ret(n_pick);
-	for (int i = 0; i < n_pick; i++)
-		ret[i] = bboxes[v_pick[i]];
 
 	*p_bboxes = std::move(ret);
 }
