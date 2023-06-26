@@ -23,7 +23,7 @@ int main(int argc, char **argv) {
 		for (const auto &f2 : faces2) {
 			float sim = (cosine(f1.feature, f2.feature) + 1.0f) * 0.5f;
 			printf("Similarity %f ", sim);
-			if (sim > 0.65f)
+			if (sim > 0.7f)
 				printf("SIMILAR");
 			printf("\n");
 		}
