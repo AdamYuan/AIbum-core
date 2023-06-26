@@ -5,7 +5,7 @@
 
 namespace aibum {
 
-struct ImageTag {
+struct Tag {
 	int index;
 	float score;
 };
@@ -13,7 +13,7 @@ struct ImageTag {
 class ImageNet {
 public:
 	explicit ImageNet(const char *model_dir);
-	std::vector<ImageTag> GetTags(const cv::Mat &image, unsigned max_count);
+	std::vector<Tag> GetTags(const cv::Mat &image, unsigned max_count);
 
 private:
 	ncnn::Net m_net;
