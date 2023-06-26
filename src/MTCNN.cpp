@@ -58,17 +58,17 @@ std::vector<MTCNN::Bbox> MTCNN::make_bbox(const ncnn::Mat &score, const ncnn::Ma
 	constexpr int kStride = 2;
 	constexpr int kCellSize = 12;
 	// score p
-	const float *p = score.channel(1); // score.data + score.cstep;
+	const float *p = score.channel(1);
 	Bbox bbox{};
 	float inv_scale = 1.0f / scale;
 	for (int row = 0; row < score.h; ++row) {
 		for (int col = 0; col < score.w; ++col, ++p) {
 			if (*p > kThresholds[0]) {
 				bbox.score = *p;
-				bbox.x1 = (int)std::round(float(kStride * col + 1) * inv_scale);
-				bbox.y1 = (int)std::round(float(kStride * row + 1) * inv_scale);
-				bbox.x2 = (int)std::round(float(kStride * col + 1 + kCellSize) * inv_scale);
-				bbox.y2 = (int)std::round(float(kStride * row + 1 + kCellSize) * inv_scale);
+				bbox.x1 = (int)std::lround(float(kStride * col + 1) * inv_scale);
+				bbox.y1 = (int)std::lround(float(kStride * row + 1) * inv_scale);
+				bbox.x2 = (int)std::lround(float(kStride * col + 1 + kCellSize) * inv_scale);
+				bbox.y2 = (int)std::lround(float(kStride * row + 1 + kCellSize) * inv_scale);
 				bbox.area = float(bbox.x2 - bbox.x1) * float(bbox.y2 - bbox.y1);
 				const int index = row * score.w + col;
 				for (int channel = 0; channel < 4; channel++) {
@@ -82,7 +82,7 @@ std::vector<MTCNN::Bbox> MTCNN::make_bbox(const ncnn::Mat &score, const ncnn::Ma
 }
 
 void MTCNN::nms(std::vector<Bbox> *p_bboxes, float overlap_threshold, bool min_model) {
-	auto bboxes = *p_bboxes;
+	auto bboxes = std::move(*p_bboxes);
 	if (bboxes.empty())
 		return;
 
@@ -100,8 +100,8 @@ void MTCNN::nms(std::vector<Bbox> *p_bboxes, float overlap_threshold, bool min_m
 		          bboxes.data(), bboxes.data() + end,
 		          [&last_box, min_model, overlap_threshold](const Bbox &cur_box) {
 			          // Calculate overlap area
-			          int ow = std::max(std::min(cur_box.x2, last_box.x2) - std::max(cur_box.x1, last_box.x1) + 1, 0),
-			              oh = std::max(std::min(cur_box.y2, last_box.y2) - std::max(cur_box.y1, last_box.y1) + 1, 0);
+			          int ow = std::max(std::min(cur_box.x2, last_box.x2) - std::max(cur_box.x1, last_box.x1), 0),
+			              oh = std::max(std::min(cur_box.y2, last_box.y2) - std::max(cur_box.y1, last_box.y1), 0);
 			          float iou = (float)ow * (float)oh;
 
 			          if (min_model)
@@ -132,10 +132,10 @@ void MTCNN::refine(std::vector<Bbox> *p_bboxes, int height, int width) {
 		float max_side = std::max(w, h);
 		x1 = x1 + w * 0.5f - max_side * 0.5f;
 		y1 = y1 + h * 0.5f - max_side * 0.5f;
-		bbox.x2 = (int)std::round(x1 + max_side - 1);
-		bbox.y2 = (int)std::round(y1 + max_side - 1);
-		bbox.x1 = (int)std::round(x1);
-		bbox.y1 = (int)std::round(y1);
+		bbox.x2 = (int)std::lround(x1 + max_side - 1);
+		bbox.y2 = (int)std::lround(y1 + max_side - 1);
+		bbox.x1 = (int)std::lround(x1);
+		bbox.y1 = (int)std::lround(y1);
 
 		// boundary check
 		bbox.x1 = std::max(bbox.x1, 0);
