@@ -7,10 +7,10 @@ namespace py = pybind11;
 
 struct PyImageNet final : public aibum::ImageNet {
 	using aibum::ImageNet::ImageNet;
-	inline py::array_t<aibum::Tag> getTags(py::array_t<uint8_t> &image, unsigned int max_count) {
+	inline py::array_t<aibum::Tag> getTags(py::array_t<uint8_t> &image, unsigned int count) {
 		py::buffer_info buf = image.request();
 		cv::Mat mat(buf.shape[0], buf.shape[1], CV_8UC3, (unsigned char *)buf.ptr);
-		auto tags = GetTags(mat, max_count);
+		auto tags = GetTags(mat, count);
 
 		py::array_t<aibum::Tag> ret((ssize_t)tags.size());
 		std::copy(tags.begin(), tags.end(), ret.mutable_data());
