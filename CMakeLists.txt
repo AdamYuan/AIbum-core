@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.10)
 project(aibum-core)
 
+set(CMAKE_CXX_STANDARD 17)
+
 option(AIBUM_TEST "build tests" ON)
 option(AIBUM_PYTHON "build Python modules" ON)
 
