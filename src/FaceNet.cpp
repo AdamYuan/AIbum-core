@@ -20,6 +20,25 @@ std::array<float, 128> FaceNet::GetFeature(const cv::Mat &image) {
 	std::array<float, 128> ret{};
 	for (int i = 0; i < 128; i++)
 		ret[i] = out[i];
+
+	// normalize
+	float l2 = 0.0;
+	{ // Kahan Sum
+		float c = 0.0f;
+		for (float f : ret) {
+			f *= f;
+			float y = f - c;
+			float t = l2 + y;
+			c = (t - l2) - y;
+			l2 = t;
+		}
+		l2 = std::sqrt(l2);
+	}
+	float inv_l2 = 1.0f / l2;
+
+	for (float &f : ret)
+		f *= inv_l2;
+
 	return ret;
 }
 
