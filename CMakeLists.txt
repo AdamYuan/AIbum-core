@@ -17,6 +17,9 @@ if (AIBUM_TEST)
 
     add_executable(aibum_face_test test/face.cpp)
     target_link_libraries(aibum_face_test PRIVATE aibum)
+
+    add_executable(aibum_face_cmp_test test/face_cmp.cpp)
+    target_link_libraries(aibum_face_cmp_test PRIVATE aibum)
 endif ()
 
 if (AIBUM_PYTHON)

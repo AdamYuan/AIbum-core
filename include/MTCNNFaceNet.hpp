@@ -23,7 +23,7 @@ public:
 		faces.reserve(face_boxes.size());
 		for (auto face_box : face_boxes) {
 			cv::Rect rect{face_box.x, face_box.y, face_box.size, face_box.size};
-			faces.push_back({face_box.x, face_box.y, face_box.size, m_face_net.GetFeature(image(rect))});
+			faces.push_back({face_box.x, face_box.y, face_box.size, m_face_net.GetFeature(image(rect).clone())});
 		}
 		return faces;
 	}
