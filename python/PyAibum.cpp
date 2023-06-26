@@ -32,7 +32,7 @@ struct PyMTCNNFaceNet final : public aibum::MTCNNFaceNet {
 	}
 };
 
-PYBIND11_MODULE(pyaibum, m) {
+PYBIND11_MODULE(pyaibum_core, m) {
 	PYBIND11_NUMPY_DTYPE(aibum::Tag, index, score);
 	py::class_<PyImageNet>(m, "ImageNet")
 	    .def(py::init<const char *>())
