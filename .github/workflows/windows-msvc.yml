@@ -37,9 +37,9 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - uses: Dovyski/setup-opencv-action@v1.1
-        with:
-          opencv-version: '4.0.0'
+      - name: Install dependencies
+        run: |
+          choco install opencv
 
       - name: Configure
         shell: bash
