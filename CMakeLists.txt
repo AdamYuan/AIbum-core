@@ -45,4 +45,35 @@ if (AIBUM_PYTHON)
     target_link_libraries(pyaibum_core PRIVATE aibum_core)
 
     install(TARGETS pyaibum_core LIBRARY DESTINATION lib)
+    if (WIN32)
+        # Install DLL dependencies
+        install(CODE [[
+                file(GET_RUNTIME_DEPENDENCIES
+                    RESOLVED_DEPENDENCIES_VAR RES_DEPS
+                    UNRESOLVED_DEPENDENCIES_VAR UNRES_DEPS
+                    CONFLICTING_DEPENDENCIES_PREFIX CONFLICTING_DEPENDENCIES
+                    EXECUTABLES $<TARGET_FILE:ScheduliteGTK>
+                    DIRECTORIES ${CMAKE_MINGW_BIN}
+                    PRE_EXCLUDE_REGEXES "api-ms-*" "ext-ms-*"
+                    POST_EXCLUDE_REGEXES ".*system32/.*\\.dll"
+                )
+
+                message("\n\nFound dependencies:")
+                foreach(DEP ${RES_DEPS})
+                    message("${DEP}")
+                    file(INSTALL
+                        DESTINATION "${CMAKE_INSTALL_PREFIX}/lib"
+                        TYPE SHARED_LIBRARY
+                        FOLLOW_SYMLINK_CHAIN
+                        FILES "${DEP}"
+                    )
+                endforeach()
+
+                message("\n\nNot found dependencies:")
+                foreach(DEP ${UNRES_DEPS})
+                    message("${DEP}")
+                endforeach()
+                ]]
+                )
+    endif ()
 endif ()

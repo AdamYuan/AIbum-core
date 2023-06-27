@@ -1,4 +1,6 @@
 # AIbum-core
+[![Linux GCC](https://github.com/AdamYuan/AIbum-core/actions/workflows/linux.yml/badge.svg)](https://github.com/AdamYuan/AIbum-core/actions/workflows/linux.yml)
+[![Windows MSVC](https://github.com/AdamYuan/AIbum-core/actions/workflows/windows-msvc.yml/badge.svg)](https://github.com/AdamYuan/AIbum-core/actions/workflows/windows-msvc.yml)
 ## Examples
 ```python
 import pyaibum_core as ab
