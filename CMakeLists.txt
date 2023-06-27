@@ -14,6 +14,7 @@ if (NOT ncnn_FOUND)
     option(NCNN_BUILD_EXAMPLES "" OFF)
     option(NCNN_BUILD_BENCHMARK "" OFF)
     option(NCNN_PYTHON "" OFF)
+    option(NCNN_INSTALL_SDK "" OFF)
     add_subdirectory(dep/ncnn)
 endif ()
 
