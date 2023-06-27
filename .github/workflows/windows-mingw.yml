@@ -47,7 +47,10 @@ jobs:
         with:
           update: false
           msystem: ${{ matrix.config.sys }}
-          install: mingw-w64-${{ matrix.config.env }}-gcc mingw-w64-${{ matrix.config.env }}-opencv cmake ninja
+          install: mingw-w64-${{ matrix.config.env }}-gcc \
+            mingw-w64-${{ matrix.config.env }}-opencv \
+            mingw-w64-${{ matrix.config.env }}-pybind11 \
+            cmake ninja
 
       - name: Configure
         shell: msys2 {0}
