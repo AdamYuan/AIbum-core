@@ -54,7 +54,7 @@ jobs:
             -S . \
             -B . \
             -A ${{ matrix.config.arch }} \
-            -DCMAKE_MODULE_PATH=C:/tools/opencv/build \
+            -DOpenCV_DIR=C:/tools/opencv/build \
             -DCMAKE_BUILD_TYPE=${{ matrix.config.build_type }} \
             -G "${{ matrix.config.generators }}" \
             -DCMAKE_INSTALL_PREFIX:PATH=instdir

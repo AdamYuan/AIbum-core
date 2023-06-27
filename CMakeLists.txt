@@ -6,8 +6,6 @@ set(CMAKE_CXX_STANDARD 17)
 option(AIBUM_TEST "build tests" ON)
 option(AIBUM_PYTHON "build Python modules" ON)
 
-message("${CMAKE_MODULE_PATH}")
-
 find_package(OpenCV REQUIRED)
 
 find_package(ncnn)
