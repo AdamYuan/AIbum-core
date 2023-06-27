@@ -1,0 +1,4 @@
+[submodule "dep/ncnn"]
+	path = dep/ncnn
+	url = https://github.com/Tencent/ncnn.git
+	branch = 903ec7c

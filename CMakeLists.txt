@@ -7,7 +7,11 @@ option(AIBUM_TEST "build tests" ON)
 option(AIBUM_PYTHON "build Python modules" ON)
 
 find_package(OpenCV REQUIRED)
-find_package(ncnn REQUIRED)
+
+find_package(ncnn)
+if (NOT ncnn_FOUND)
+    add_subdirectory(dep/ncnn)
+endif ()
 
 add_library(aibum_core STATIC src/MTCNN.cpp src/FaceNet.cpp src/ImageNet.cpp)
 target_include_directories(aibum_core PUBLIC include)
