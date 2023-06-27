@@ -35,4 +35,6 @@ if (AIBUM_PYTHON)
             python/PyAibum.cpp
             )
     target_link_libraries(pyaibum_core PRIVATE aibum_core)
+
+    install(TARGETS pyaibum_core LIBRARY DESTINATION lib)
 endif ()
