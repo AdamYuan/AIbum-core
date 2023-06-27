@@ -34,7 +34,10 @@ if (AIBUM_TEST)
 endif ()
 
 if (AIBUM_PYTHON)
-    find_package(pybind11 CONFIG REQUIRED)
+    find_package(pybind11 CONFIG)
+    if (NOT pybind11_FOUND)
+        add_subdirectory(dep/pybind11)
+    endif ()
 
     pybind11_add_module(pyaibum_core
             python/PyAibum.cpp
