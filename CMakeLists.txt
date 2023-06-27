@@ -10,6 +10,7 @@ find_package(OpenCV REQUIRED)
 
 find_package(ncnn)
 if (NOT ncnn_FOUND)
+    set(NCNN_BUILD_BENCHMARK OFF)
     add_subdirectory(dep/ncnn)
 endif ()
 
