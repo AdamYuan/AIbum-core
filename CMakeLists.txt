@@ -34,7 +34,7 @@ if (AIBUM_TEST)
 endif ()
 
 if (AIBUM_PYTHON)
-    find_package(pybind11 REQUIRED)
+    find_package(pybind11 CONFIG REQUIRED)
 
     pybind11_add_module(pyaibum_core
             python/PyAibum.cpp
