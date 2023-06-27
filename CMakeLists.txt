@@ -52,7 +52,7 @@ if (AIBUM_PYTHON)
                     RESOLVED_DEPENDENCIES_VAR RES_DEPS
                     UNRESOLVED_DEPENDENCIES_VAR UNRES_DEPS
                     CONFLICTING_DEPENDENCIES_PREFIX CONFLICTING_DEPENDENCIES
-                    EXECUTABLES $<TARGET_FILE:pyaibum_core>
+                    LIBRARIES $<TARGET_FILE:pyaibum_core>
                     PRE_EXCLUDE_REGEXES "api-ms-*" "ext-ms-*"
                     POST_EXCLUDE_REGEXES ".*system32/.*\\.dll"
                 )
