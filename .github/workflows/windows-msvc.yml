@@ -24,15 +24,6 @@ jobs:
             archiver: "7z a",
             generators: "Visual Studio 17 2022"
           }
-          - {
-            name: "Windows MSVC 32",
-            os: windows-latest,
-            artifact: "windows_msvc_32.7z",
-            build_type: "Release",
-            arch: "Win32",
-            archiver: "7z a",
-            generators: "Visual Studio 17 2022"
-          }
 
     steps:
       - uses: actions/checkout@v3
@@ -42,8 +33,7 @@ jobs:
       - name: Install dependencies
         shell: bash
         run: |
-          choco install opencv tree
-          tree C:/tools
+          choco install opencv
 
       - name: Configure
         shell: bash
