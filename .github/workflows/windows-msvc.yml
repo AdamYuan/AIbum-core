@@ -42,7 +42,7 @@ jobs:
       - name: Install dependencies
         shell: bash
         run: |
-          choco install opencv
+          choco install opencv tree
           tree C:/tools
 
       - name: Configure
