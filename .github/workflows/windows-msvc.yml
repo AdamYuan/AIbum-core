@@ -43,6 +43,7 @@ jobs:
         shell: bash
         run: |
           choco install opencv
+          tree C:/tools
 
       - name: Configure
         shell: bash
