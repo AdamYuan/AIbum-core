@@ -8,7 +8,7 @@ namespace aibum {
 
 class FaceNet {
 public:
-	explicit FaceNet(const char *model_dir);
+	FaceNet();
 	std::array<float, 128> GetFeature(const cv::Mat &image);
 
 private:

@@ -4,9 +4,10 @@
 ## Examples
 ```python
 import pyaibum_core as ab
+
 image = ab.Image('image.png')
-classifier = ab.ImageNet('path/to/models/')
+classifier = ab.ImageNet()
 tags = classifier.getTags(image)
-face_recogizer = ab.MTCNNFaceNet('path/to/models/')
+face_recogizer = ab.SCRFDFaceNet()
 faces = face_recogizer.getFaces(image)
 ```

@@ -12,7 +12,7 @@ struct Tag {
 
 class ImageNet {
 public:
-	explicit ImageNet(const char *model_dir);
+	ImageNet();
 	std::vector<Tag> GetTags(const cv::Mat &image, unsigned count);
 
 private:

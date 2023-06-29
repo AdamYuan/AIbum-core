@@ -1,5 +1,5 @@
 #include <ImageNet.hpp>
-#include <MTCNNFaceNet.hpp>
+#include <SCRFDFaceNet.hpp>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 
@@ -34,8 +34,8 @@ struct PyImageNet final : public aibum::ImageNet {
 	}
 };
 
-struct PyMTCNNFaceNet final : public aibum::MTCNNFaceNet {
-	using aibum::MTCNNFaceNet::MTCNNFaceNet;
+struct PySCRFDFaceNet final : public aibum::SCRFDFaceNet {
+	using aibum::SCRFDFaceNet::SCRFDFaceNet;
 
 	inline py::array_t<aibum::Face> getFaces(const PyImage &image) {
 		std::vector<aibum::Face> faces = GetFaces(image.GetMat());
@@ -53,11 +53,11 @@ PYBIND11_MODULE(pyaibum_core, m) {
 
 	PYBIND11_NUMPY_DTYPE(aibum::Tag, index, score);
 	py::class_<PyImageNet>(m, "ImageNet")
-			.def(py::init<const char *>())
+			.def(py::init<>())
 			.def("getTags", &PyImageNet::getTags, py::return_value_policy::move);
 
 	PYBIND11_NUMPY_DTYPE(aibum::Face, x, y, size, feature);
-	py::class_<PyMTCNNFaceNet>(m, "MTCNNFaceNet")
-			.def(py::init<const char *>())
-			.def("getFaces", &PyMTCNNFaceNet::getFaces, py::return_value_policy::move);
+	py::class_<PySCRFDFaceNet>(m, "SCRFDFaceNet")
+			.def(py::init<>())
+			.def("getFaces", &PySCRFDFaceNet::getFaces, py::return_value_policy::move);
 }

@@ -1,4 +1,4 @@
-#include <MTCNNFaceNet.hpp>
+#include <SCRFDFaceNet.hpp>
 
 inline float cosine(const std::array<float, 128> &l, const std::array<float, 128> &r) {
 	float ret = .0f;
@@ -12,10 +12,10 @@ int main(int argc, char **argv) {
 	if (argc != 2)
 		return -1;
 
-	aibum::MTCNNFaceNet mtcnn_face_net{"models/"};
+	aibum::SCRFDFaceNet scrfd_face_net{};
 
 	cv::Mat img1 = cv::imread(argv[0]), img2 = cv::imread(argv[1]);
-	std::vector<aibum::Face> faces1 = mtcnn_face_net.GetFaces(img1), faces2 = mtcnn_face_net.GetFaces(img2);
+	std::vector<aibum::Face> faces1 = scrfd_face_net.GetFaces(img1), faces2 = scrfd_face_net.GetFaces(img2);
 
 	printf("faces1: %ld\nfaces2: %ld\n", faces1.size(), faces2.size());
 

@@ -1,10 +1,13 @@
 #include <FaceNet.hpp>
 
+#include <mobilefacenet.id.h>
+#include <mobilefacenet.mem.h>
+
 namespace aibum {
 
-FaceNet::FaceNet(const char *model_dir) {
-	m_net.load_param((std::string{model_dir} + "mobilefacenet.param").c_str());
-	m_net.load_model((std::string{model_dir} + "mobilefacenet.bin").c_str());
+FaceNet::FaceNet() {
+	m_net.load_param(mobilefacenet_param_bin);
+	m_net.load_model(mobilefacenet_bin);
 }
 
 std::array<float, 128> FaceNet::GetFeature(const cv::Mat &image) {
@@ -13,9 +16,9 @@ std::array<float, 128> FaceNet::GetFeature(const cv::Mat &image) {
 
 	ncnn::Extractor ex = m_net.create_extractor();
 	ex.set_light_mode(true);
-	ex.input("data", ncnn_img);
+	ex.input(mobilefacenet_param_id::BLOB_data, ncnn_img);
 	ncnn::Mat out;
-	ex.extract("fc1", out);
+	ex.extract(mobilefacenet_param_id::BLOB_fc1, out);
 
 	std::array<float, 128> ret{};
 	for (int i = 0; i < 128; i++)

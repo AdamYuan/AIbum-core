@@ -1,10 +1,13 @@
 #include <ImageNet.hpp>
 
+#include <mobilenet_v3.id.h>
+#include <mobilenet_v3.mem.h>
+
 namespace aibum {
 
-ImageNet::ImageNet(const char *model_dir) {
-	m_net.load_param((std::string{model_dir} + "mobilenet_v3.param").c_str());
-	m_net.load_model((std::string{model_dir} + "mobilenet_v3.bin").c_str());
+ImageNet::ImageNet() {
+	m_net.load_param(mobilenet_v3_param_bin);
+	m_net.load_model(mobilenet_v3_bin);
 }
 
 std::vector<Tag> ImageNet::GetTags(const cv::Mat &image, unsigned int count) {
@@ -16,8 +19,8 @@ std::vector<Tag> ImageNet::GetTags(const cv::Mat &image, unsigned int count) {
 
 	ncnn::Mat out;
 	ncnn::Extractor ex = m_net.create_extractor();
-	ex.input("in0", in);
-	ex.extract("out0", out);
+	ex.input(mobilenet_v3_param_id::BLOB_in0, in);
+	ex.extract(mobilenet_v3_param_id::BLOB_out0, out);
 	std::vector<float> cls_scores(out.w);
 	for (int j = 0; j < out.w; j++)
 		cls_scores[j] = out[j];
