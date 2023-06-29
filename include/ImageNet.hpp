@@ -1,7 +1,7 @@
 #pragma once
 
+#include <Image.hpp>
 #include <net.h>
-#include <opencv2/opencv.hpp>
 
 namespace aibum {
 
@@ -13,7 +13,7 @@ struct Tag {
 class ImageNet {
 public:
 	ImageNet();
-	std::vector<Tag> GetTags(const cv::Mat &image, unsigned count);
+	std::vector<Tag> GetTags(const Image &image, int count) const;
 
 private:
 	ncnn::Net m_net;

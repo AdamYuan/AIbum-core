@@ -1,9 +1,10 @@
 #include <SCRFD.hpp>
 #include <algorithm>
-#include <iostream>
 
-#include "scrfd.id.h"
-#include "scrfd.mem.h"
+#include <scrfd.id.h>
+#include <scrfd.mem.h>
+
+#include "Util.hpp"
 
 namespace aibum {
 
@@ -12,13 +13,13 @@ SCRFD::SCRFD() {
 	m_net.load_model(scrfd_bin);
 }
 
-std::vector<FaceBox> SCRFD::Detect(const cv::Mat &image) const {
+std::vector<FaceBox> SCRFD::Detect(const Image &image) const {
 	const int target_size = 640;
 	const float kProbThreshold = 0.45f;
 	const float kNMSThreshold = 0.45f;
 
-	int w = image.cols;
-	int h = image.rows;
+	int w = image.width;
+	int h = image.height;
 	float scale = 1.f;
 	if (w > h) {
 		scale = (float)target_size / (float)w;
@@ -30,7 +31,7 @@ std::vector<FaceBox> SCRFD::Detect(const cv::Mat &image) const {
 		w = int((float)w * scale);
 	}
 
-	ncnn::Mat in = ncnn::Mat::from_pixels_resize(image.data, ncnn::Mat::PIXEL_BGR2RGB, image.cols, image.rows, w, h);
+	ncnn::Mat in = Image2Mat<ncnn::Mat::PIXEL_RGB>(image, w, h);
 
 	// pad to target_size rectangle
 	int wpad = (w + 31) / 32 * 32 - w;
@@ -139,9 +140,16 @@ std::vector<FaceBox> SCRFD::Detect(const cv::Mat &image) const {
 		int ix0 = (int)std::lround(x0);
 		int iy0 = (int)std::lround(y0);
 
+		// Bound
+		ix0 = std::max(ix0, 0);
+		ix1 = std::min(ix1, image.width);
+		iy0 = std::max(iy0, 0);
+		iy1 = std::min(iy1, image.height);
+
 		face_boxes[i].x = ix0;
 		face_boxes[i].y = iy0;
-		face_boxes[i].size = ix1 - ix0;
+		face_boxes[i].w = ix1 - ix0;
+		face_boxes[i].h = iy1 - iy0;
 	}
 
 	return face_boxes;

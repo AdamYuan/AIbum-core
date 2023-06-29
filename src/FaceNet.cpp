@@ -3,6 +3,8 @@
 #include <mobilefacenet.id.h>
 #include <mobilefacenet.mem.h>
 
+#include "Util.hpp"
+
 namespace aibum {
 
 FaceNet::FaceNet() {
@@ -10,25 +12,48 @@ FaceNet::FaceNet() {
 	m_net.load_model(mobilefacenet_bin);
 }
 
-std::array<float, 128> FaceNet::GetFeature(const cv::Mat &image) {
-	ncnn::Mat ncnn_img =
-	    ncnn::Mat::from_pixels_resize(image.data, ncnn::Mat::PIXEL_BGR2RGB, image.cols, image.rows, 112, 112);
+FaceFeature FaceNet::GetFeature(const Image &image) const {
+	ncnn::Mat in = Image2Mat<112, 112, ncnn::Mat::PIXEL_RGB>(image);
+	return get_feature_rgb_112_112(in);
+}
 
+std::vector<Face> FaceNet::GetFaces(const SCRFD &scrfd, const Image &image) const {
+
+	std::vector<FaceBox> face_boxes = scrfd.Detect(image);
+	std::vector<Face> faces;
+	faces.reserve(face_boxes.size());
+
+	ncnn::Mat mat = Image2Mat<ncnn::Mat::PIXEL_RGB>(image, image.width, image.height);
+
+	for (auto face_box : face_boxes) {
+		ncnn::Mat part, in;
+		ncnn::copy_cut_border(mat, part, face_box.y, image.height - face_box.y - face_box.h, face_box.x,
+		                      image.width - face_box.x - face_box.w);
+		ncnn::resize_bilinear(part, in, 112, 112);
+
+		faces.push_back({face_box.x, face_box.y, face_box.w, face_box.h});
+		auto feature = get_feature_rgb_112_112(in);
+		std::copy(std::begin(feature.feature), std::end(feature.feature), faces.back().feature);
+	}
+	return faces;
+}
+
+FaceFeature FaceNet::get_feature_rgb_112_112(const ncnn::Mat &image) const {
 	ncnn::Extractor ex = m_net.create_extractor();
 	ex.set_light_mode(true);
-	ex.input(mobilefacenet_param_id::BLOB_data, ncnn_img);
+	ex.input(mobilefacenet_param_id::BLOB_data, image);
 	ncnn::Mat out;
 	ex.extract(mobilefacenet_param_id::BLOB_fc1, out);
 
-	std::array<float, 128> ret{};
+	FaceFeature ret{};
 	for (int i = 0; i < 128; i++)
-		ret[i] = out[i];
+		ret.feature[i] = out[i];
 
 	// normalize
 	float l2 = 0.0;
 	{ // Kahan Sum
 		float c = 0.0f;
-		for (float f : ret) {
+		for (float f : ret.feature) {
 			f *= f;
 			float y = f - c;
 			float t = l2 + y;
@@ -39,7 +64,7 @@ std::array<float, 128> FaceNet::GetFeature(const cv::Mat &image) {
 	}
 	float inv_l2 = 1.0f / l2;
 
-	for (float &f : ret)
+	for (float &f : ret.feature)
 		f *= inv_l2;
 
 	return ret;

@@ -1,6 +1,7 @@
-#include <SCRFDFaceNet.hpp>
+#include <FaceNet.hpp>
+#include <opencv2/opencv.hpp>
 
-inline float cosine(const std::array<float, 128> &l, const std::array<float, 128> &r) {
+inline float cosine(const float *l, const float *r) {
 	float ret = .0f;
 	for (std::size_t i = 0; i < 128; ++i)
 		ret += l[i] * r[i];
@@ -12,10 +13,12 @@ int main(int argc, char **argv) {
 	if (argc != 2)
 		return -1;
 
-	aibum::SCRFDFaceNet scrfd_face_net{};
+	aibum::SCRFD scrfd{};
+	aibum::FaceNet face_net{};
 
 	cv::Mat img1 = cv::imread(argv[0]), img2 = cv::imread(argv[1]);
-	std::vector<aibum::Face> faces1 = scrfd_face_net.GetFaces(img1), faces2 = scrfd_face_net.GetFaces(img2);
+	std::vector<aibum::Face> faces1 = face_net.GetFaces(scrfd, {img1.data, img1.cols, img1.rows, ncnn::Mat::PIXEL_BGR}),
+	                         faces2 = face_net.GetFaces(scrfd, {img2.data, img2.cols, img2.rows, ncnn::Mat::PIXEL_BGR});
 
 	printf("faces1: %ld\nfaces2: %ld\n", faces1.size(), faces2.size());
 
@@ -23,7 +26,7 @@ int main(int argc, char **argv) {
 		for (const auto &f2 : faces2) {
 			float sim = (cosine(f1.feature, f2.feature) + 1.0f) * 0.5f;
 			printf("Similarity %f ", sim);
-			if (sim > 0.7f)
+			if (sim > 0.75f)
 				printf("SIMILAR");
 			printf("\n");
 		}
