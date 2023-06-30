@@ -1,5 +1,6 @@
 #include <SCRFD.hpp>
 #include <algorithm>
+#include <cmath>
 
 #include <scrfd.id.h>
 #include <scrfd.mem.h>
