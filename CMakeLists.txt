@@ -41,11 +41,13 @@ else ()
         add_library(ncnn-${TYPE} INTERFACE)
         target_link_libraries(ncnn-${TYPE} INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/wasm/dep/ncnn/lib/${TYPE}/libncnn.a")
 
-        add_executable(aibum_core_wasm-${TYPE}
-                wasm/aibum_core_wasm.cpp
-                )
+        add_executable(aibum_core_wasm-${TYPE} wasm/aibum_core_wasm.cpp)
         target_include_directories(aibum_core_wasm-${TYPE} PRIVATE wasm/dep/stb)
         target_link_libraries(aibum_core_wasm-${TYPE} PRIVATE aibum_core ncnn-${TYPE})
+		target_compile_options(aibum_core_wasm-${TYPE} PRIVATE
+				-fno-exceptions
+				-flto
+			)
         target_link_options(aibum_core_wasm-${TYPE} PRIVATE
                 --bind
                 -sENVIRONMENT=web
@@ -55,7 +57,9 @@ else ()
                 -sEXPORT_NAME=loadAIbumCore
                 -sALLOW_MEMORY_GROWTH
                 -sEXPORTED_FUNCTIONS=[_malloc]
-                -sTOTAL_MEMORY=32MB
+				-flto
+				-sTOTAL_MEMORY=512MB
+				-sMALLOC=emmalloc
                 )
 
         install(FILES
