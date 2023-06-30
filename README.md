@@ -1,13 +1,3 @@
 # AIbum-core
-[![Linux GCC](https://github.com/AdamYuan/AIbum-core/actions/workflows/linux.yml/badge.svg)](https://github.com/AdamYuan/AIbum-core/actions/workflows/linux.yml)
-[![Windows MSVC](https://github.com/AdamYuan/AIbum-core/actions/workflows/windows-msvc.yml/badge.svg)](https://github.com/AdamYuan/AIbum-core/actions/workflows/windows-msvc.yml)
-## Examples
-```python
-import pyaibum_core as ab
-
-image = ab.Image('image.png')
-classifier = ab.ImageNet()
-tags = classifier.getTags(image)
-face_recogizer = ab.SCRFDFaceNet()
-faces = face_recogizer.getFaces(image)
-```
+[![WebAssembly](https://github.com/AdamYuan/AIbum-core/actions/workflows/linux.yml/badge.svg)](https://github.com/AdamYuan/AIbum-core/actions/workflows/wasm.yml)
+## React Examples

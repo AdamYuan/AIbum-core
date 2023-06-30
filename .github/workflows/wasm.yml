@@ -39,7 +39,7 @@ jobs:
             -S . \
             -B . \
             -DCMAKE_BUILD_TYPE=${{ matrix.config.build_type }} \
-            -DCMAKE_TOOLCHAIN_FILE=/usr/lib/emscripten/cmake/Modules/Platform/Emscripten.cmake \
+            -DCMAKE_TOOLCHAIN_FILE=/usr/share/emscripten/cmake/Modules/Platform/Emscripten.cmake \
             -DAIBUM_WASM_ONLY=1 \
             -G "${{ matrix.config.generators }}" \
             -DCMAKE_INSTALL_PREFIX:PATH=instdir
