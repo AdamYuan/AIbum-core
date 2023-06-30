@@ -31,9 +31,7 @@ std::vector<Face> FaceNet::GetFaces(const SCRFD &scrfd, const Image &image) cons
 		                      image.width - face_box.x - face_box.w);
 		ncnn::resize_bilinear(part, in, 112, 112);
 
-		faces.push_back({face_box.x, face_box.y, face_box.w, face_box.h});
-		auto feature = get_feature_rgb_112_112(in);
-		std::copy(std::begin(feature.feature), std::end(feature.feature), faces.back().feature);
+		faces.push_back({face_box.x, face_box.y, face_box.w, face_box.h, get_feature_rgb_112_112(in)});
 	}
 	return faces;
 }
@@ -45,15 +43,15 @@ FaceFeature FaceNet::get_feature_rgb_112_112(const ncnn::Mat &image) const {
 	ncnn::Mat out;
 	ex.extract(mobilefacenet_param_id::BLOB_fc1, out);
 
-	FaceFeature ret{};
+	FaceFeature feature{};
 	for (int i = 0; i < 128; i++)
-		ret.feature[i] = out[i];
+		feature[i] = out[i];
 
 	// normalize
 	float l2 = 0.0;
 	{ // Kahan Sum
 		float c = 0.0f;
-		for (float f : ret.feature) {
+		for (float f : feature) {
 			f *= f;
 			float y = f - c;
 			float t = l2 + y;
@@ -64,10 +62,10 @@ FaceFeature FaceNet::get_feature_rgb_112_112(const ncnn::Mat &image) const {
 	}
 	float inv_l2 = 1.0f / l2;
 
-	for (float &f : ret.feature)
+	for (float &f : feature)
 		f *= inv_l2;
 
-	return ret;
+	return feature;
 }
 
 } // namespace aibum

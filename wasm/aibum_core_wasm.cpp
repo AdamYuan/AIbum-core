@@ -4,6 +4,8 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
+#include <string>
+
 #include <FaceNet.hpp>
 #include <ImageNet.hpp>
 
@@ -16,17 +18,29 @@ private:
 
 public:
 	inline WASMImage() = default;
-	inline explicit WASMImage(const char *filename) { loadFromFile(filename); }
-	inline WASMImage(unsigned char *buffer, size_t size) { loadFromMemory(buffer, size); }
-	inline void loadFromMemory(const unsigned char *buffer, size_t size) {
-		int comp;
-		m_data = stbi_load_from_memory(buffer, (int)size, &m_width, &m_height, &comp, 3);
+	inline explicit WASMImage(const std::string &filename) { loadFromFile(filename); }
+	inline WASMImage(uintptr_t buffer_ptr, size_t size) { loadFromMemory(buffer_ptr, size); }
+	inline ~WASMImage() {
+		if (m_data)
+			stbi_image_free(m_data);
 	}
-	inline void loadFromFile(const char *filename) {
+
+	inline void loadFromMemory(uintptr_t buffer_ptr, size_t size) {
+		if (m_data) {
+			stbi_image_free(m_data);
+			m_data = nullptr;
+		}
 		int comp;
-		m_data = stbi_load(filename, &m_width, &m_height, &comp, 3);
+		m_data = stbi_load_from_memory((const unsigned char *)buffer_ptr, (int)size, &m_width, &m_height, &comp, 3);
 	}
-	inline void free() { stbi_image_free(m_data); }
+	inline void loadFromFile(const std::string &filename) {
+		if (m_data) {
+			stbi_image_free(m_data);
+			m_data = nullptr;
+		}
+		int comp;
+		m_data = stbi_load(filename.c_str(), &m_width, &m_height, &comp, 3);
+	}
 	inline bool valid() const { return m_data; }
 
 	inline aibum::Image GetImage() const { return {m_data, m_width, m_height, ncnn::Mat::PIXEL_RGB}; }
@@ -39,9 +53,10 @@ private:
 public:
 	inline WASMImageNet() : m_object() {}
 	inline std::vector<aibum::Tag> getTags(const WASMImage &image, int count) const {
+		if (!image.valid())
+			return {};
 		return m_object.GetTags(image.GetImage(), count);
 	}
-	inline void free() { m_object.~ImageNet(); }
 };
 
 class WASMFaceNet {
@@ -52,13 +67,47 @@ private:
 public:
 	inline WASMFaceNet() : m_detector(), m_face_net() {}
 	inline std::vector<aibum::Face> getFaces(const WASMImage &image) const {
+		if (!image.valid())
+			return {};
 		return m_face_net.GetFaces(m_detector, image.GetImage());
 	}
-	inline void free() {
-		m_detector.~SCRFD();
-		m_face_net.~FaceNet();
-	}
 };
+
+template <typename T> e::class_<std::vector<T>> my_register_vector(const char *name) {
+	typedef std::vector<T> VecType;
+
+	size_t (VecType::*size)() const = &VecType::size;
+
+	const auto toArray = +[](const VecType &v) -> e::val { return e::val::array(v.begin(), v.end()); };
+	const auto get = +[](const VecType &v, typename VecType ::size_type index) -> e::val {
+		return index < v.size() ? e::val(v[index]) : e::val::undefined();
+	};
+
+	return e::class_<VecType>(name)
+	    .template constructor<>()
+	    .function("size", size)
+	    .function("toArray", toArray)
+	    .function("toObject", toArray)
+	    .function("get", get);
+}
+
+template <typename T, std::size_t L> e::class_<std::array<T, L>> my_register_array(const char *name) {
+	typedef std::array<T, L> ArrType;
+
+	size_t (ArrType::*size)() const = &ArrType::size;
+
+	const auto toArray = +[](const ArrType &v) -> e::val { return e::val::array(v.begin(), v.end()); };
+	const auto get = +[](const ArrType &v, typename ArrType ::size_type index) -> e::val {
+		return index < v.size() ? e::val(v[index]) : e::val::undefined();
+	};
+
+	return e::class_<ArrType>(name)
+	    .template constructor<>()
+	    .function("size", size)
+	    .function("toArray", toArray)
+	    .function("toObject", toArray)
+	    .function("get", get);
+}
 
 EMSCRIPTEN_BINDINGS(AIbumCore) {
 	e::value_object<aibum::Face>("Face")
@@ -69,23 +118,20 @@ EMSCRIPTEN_BINDINGS(AIbumCore) {
 	    .field("feature", &aibum::Face::feature);
 	e::value_object<aibum::Tag>("Tag").field("index", &aibum::Tag::index).field("score", &aibum::Tag::score);
 
-	e::register_vector<aibum::Face>("FaceList");
-	e::register_vector<aibum::Tag>("TagList");
+	my_register_array<float, 128>("FaceFeature");
+
+	my_register_vector<aibum::Face>("FaceList");
+	my_register_vector<aibum::Tag>("TagList");
 
 	e::class_<WASMImage>("Image")
 	    .constructor()
-	    .function("loadFromFile", &WASMImage::loadFromFile, e::allow_raw_pointers())
+	    .constructor<uintptr_t, size_t>()
+	    .constructor<const std::string &>()
+	    .function("loadFromFile", &WASMImage::loadFromFile)
 	    .function("loadFromMemory", &WASMImage::loadFromMemory, e::allow_raw_pointers())
-	    .function("valid", &WASMImage::valid)
-	    .function("free", &WASMImage::free);
+	    .function("valid", &WASMImage::valid);
 
-	e::class_<WASMImageNet>("ImageNet")
-	    .constructor()
-	    .function("getTags", &WASMImageNet::getTags)
-	    .function("free", &WASMImageNet::free);
+	e::class_<WASMImageNet>("ImageNet").constructor().function("getTags", &WASMImageNet::getTags);
 
-	e::class_<WASMFaceNet>("FaceNet")
-		.constructor()
-		.function("getFaces", &WASMFaceNet::getFaces)
-		.function("free", &WASMFaceNet::free);
+	e::class_<WASMFaceNet>("FaceNet").constructor().function("getFaces", &WASMFaceNet::getFaces);
 }

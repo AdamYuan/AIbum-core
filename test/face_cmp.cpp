@@ -1,7 +1,7 @@
 #include <FaceNet.hpp>
 #include <opencv2/opencv.hpp>
 
-inline float cosine(const float *l, const float *r) {
+inline float cosine(const aibum::FaceFeature &l, const aibum::FaceFeature &r) {
 	float ret = .0f;
 	for (std::size_t i = 0; i < 128; ++i)
 		ret += l[i] * r[i];

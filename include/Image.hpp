@@ -1,6 +1,6 @@
 #pragma once
 
-#include <mat.h>
+#include <ncnn/mat.h>
 
 namespace aibum {
 

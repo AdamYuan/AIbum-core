@@ -15,13 +15,7 @@ add_library(aibum_core STATIC
 target_include_directories(aibum_core PUBLIC include PRIVATE models/include)
 
 if (NOT AIBUM_WASM_ONLY)
-    option(NCNN_BUILD_TOOLS "" OFF)
-    option(NCNN_BUILD_EXAMPLES "" OFF)
-    option(NCNN_BUILD_BENCHMARK "" OFF)
-    option(NCNN_PYTHON "" OFF)
-    option(NCNN_INSTALL_SDK "" OFF)
-    add_subdirectory(dep/ncnn)
-
+    find_package(ncnn REQUIRED)
     target_link_libraries(aibum_core PUBLIC ncnn)
 
     if (AIBUM_TEST)
@@ -38,8 +32,8 @@ if (NOT AIBUM_WASM_ONLY)
     endif ()
 else ()
     add_library(ncnn INTERFACE)
-    target_link_libraries(ncnn INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/wasm/dep/ncnn/lib/libncnn.a")
-    target_include_directories(ncnn INTERFACE wasm/dep/ncnn/include wasm/dep/stb)
+    target_link_libraries(ncnn INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/wasm/dep/ncnn/simd-threads/lib/libncnn.a")
+    target_include_directories(ncnn INTERFACE wasm/dep/ncnn/simd-threads/include wasm/dep/stb)
 
     target_link_libraries(aibum_core PUBLIC ncnn)
 
@@ -47,5 +41,19 @@ else ()
             wasm/aibum_core_wasm.cpp
             )
     target_link_libraries(aibum_core_wasm PRIVATE aibum_core)
-    set_target_properties(aibum_core_wasm PROPERTIES LINK_FLAGS "--bind")
+    target_link_options(aibum_core_wasm PRIVATE
+            --bind
+            -sENVIRONMENT=web
+            -sMODULARIZE=1
+            -sEXPORT_ES6=1
+            -sDISABLE_EXCEPTION_CATCHING=1
+            -sEXPORT_NAME=loadAIbumCore
+            -sALLOW_MEMORY_GROWTH
+            -sEXPORTED_FUNCTIONS=[_malloc]
+            )
+
+    install(FILES
+            "$<TARGET_FILE_DIR:aibum_core_wasm>/aibum_core_wasm.js"
+            "$<TARGET_FILE_DIR:aibum_core_wasm>/aibum_core_wasm.wasm"
+            DESTINATION ${CMAKE_INSTALL_PREFIX})
 endif ()

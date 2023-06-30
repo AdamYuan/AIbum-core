@@ -3,17 +3,15 @@
 #include <Image.hpp>
 #include <SCRFD.hpp>
 #include <array>
-#include <net.h>
+#include <ncnn/net.h>
 
 namespace aibum {
 
+using FaceFeature = std::array<float, 128>;
+
 struct Face {
 	int x, y, w, h;
-	float feature[128];
-};
-
-struct FaceFeature {
-	float feature[128];
+	FaceFeature feature;
 };
 
 class FaceNet {

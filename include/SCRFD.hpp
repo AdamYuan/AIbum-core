@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Image.hpp>
-#include <net.h>
+#include <ncnn/net.h>
 #include <vector>
 
 namespace aibum {
