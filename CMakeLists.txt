@@ -56,5 +56,5 @@ else ()
     install(FILES
             "$<TARGET_FILE_DIR:aibum_core_wasm>/aibum_core_wasm.js"
             "$<TARGET_FILE_DIR:aibum_core_wasm>/aibum_core_wasm.wasm"
-            )
+            DESTINATION)
 endif ()
