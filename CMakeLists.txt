@@ -50,6 +50,7 @@ else ()
             -sEXPORT_NAME=loadAIbumCore
             -sALLOW_MEMORY_GROWTH
             -sEXPORTED_FUNCTIONS=[_malloc]
+            --initial-memory=33554432
             )
 
     install(FILES
