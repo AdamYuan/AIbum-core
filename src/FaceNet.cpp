@@ -2,6 +2,7 @@
 
 #include <mobilefacenet.id.h>
 #include <mobilefacenet.mem.h>
+#include <cmath>
 
 #include "Util.hpp"
 
