@@ -2,6 +2,14 @@
 #include <emscripten/html5.h>
 
 #define STB_IMAGE_IMPLEMENTATION
+#define STB_IMAGE_STATIC
+#define STBI_NO_BMP
+#define STBI_NO_PSD
+#define STBI_NO_TGA
+#define STBI_NO_GIF
+#define STBI_NO_HDR
+#define STBI_NO_PIC
+#define STBI_NO_PNM
 #include <stb_image.h>
 
 #include <string>
@@ -87,7 +95,6 @@ template <typename T> e::class_<std::vector<T>> my_register_vector(const char *n
 	    .template constructor<>()
 	    .function("size", size)
 	    .function("toArray", toArray)
-	    .function("toObject", toArray)
 	    .function("get", get);
 }
 
@@ -105,7 +112,6 @@ template <typename T, std::size_t L> e::class_<std::array<T, L>> my_register_arr
 	    .template constructor<>()
 	    .function("size", size)
 	    .function("toArray", toArray)
-	    .function("toObject", toArray)
 	    .function("get", get);
 }
 
