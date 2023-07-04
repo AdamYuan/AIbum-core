@@ -10,14 +10,18 @@ add_library(aibum_core STATIC
 		src/SCRFD.cpp
 		src/FaceNet.cpp
 		src/ImageNet.cpp
+		src/StyleTransfer.cpp
 		models/src/mobilefacenet.mem.c
-		models/src/mobilenet_v3.mem.c
+		models/src/efficientnet_b0_fp16.bin.c
 		models/src/scrfd.mem.c
 		)
 target_include_directories(aibum_core PUBLIC include PRIVATE models/include)
 
 if (NOT AIBUM_WASM_ONLY)
-	find_package(ncnn REQUIRED)
+	option(NCNN_BUILD_BENCHMARK OFF)
+	add_subdirectory(dep/ncnn)
+
+	# find_package(ncnn REQUIRED)
 	target_link_libraries(aibum_core PUBLIC ncnn)
 
 	if (AIBUM_TEST)
@@ -31,6 +35,9 @@ if (NOT AIBUM_WASM_ONLY)
 
 		add_executable(aibum_face_cmp_test test/face_cmp.cpp)
 		target_link_libraries(aibum_face_cmp_test PRIVATE aibum_core ${OpenCV_LIBS})
+
+		add_executable(aibum_style_test test/style.cpp)
+		target_link_libraries(aibum_style_test PRIVATE aibum_core ${OpenCV_LIBS})
 	endif ()
 else ()
 	target_include_directories(aibum_core PUBLIC wasm/dep/ncnn/include)
