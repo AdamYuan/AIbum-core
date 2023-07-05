@@ -3,85 +3,101 @@
 ## React Example
 ```javascript
 import { useState } from "react";
-import { simd, threads } from 'wasm-feature-detect';
 import ImageUploading from 'react-images-uploading';
+import loadAIbumCore from './core/AIbumCore';
 
-let aibumCore;
-{ // simple AIbumCore module loader, should implement lazy loading
-	let loader;
-	const simd_support = await simd();
-	const threads_support = await threads();
-	if (threads_support)
-		loader = simd_support ? import('./core/aibum_core_wasm-simd-threads') : import('./core/aibum_core_wasm-threads');
-	else
-		loader = simd_support ? import('./core/aibum_core_wasm-simd') : import('./core/aibum_core_wasm-basic');
-
-	const {default : loadAIbumCore} = await loader;
-	aibumCore = await loadAIbumCore();
-}
+const aibumCore = await loadAIbumCore();
 const faceNet = new aibumCore.FaceNet();
 const imageNet = new aibumCore.ImageNet();
 
+function createStyleTransfer(uri) {
+    return new Promise((resolve) => {
+        fetch(uri).then(
+            async (res) => {
+                var fr = new FileReader();
+                fr.onload = (e) => {
+                    resolve(new aibumCore.StyleTransfer(new Uint8Array(e.target.result)));
+                };
+                fr.onerror = () => { resolve(null); };
+                fr.readAsArrayBuffer(await res.blob());
+            },
+            () => { resolve(null); }
+        );
+    });
+}
+
 function App() {
-	const [images, setImages] = useState([]);
+    const [images, setImages] = useState([]);
+    const [abImage, setABImage] = useState(null);
+    const [imageFaces, setImageFaces] = useState(null);
+    const [imageTags, setImageTags] = useState(null);
 
-	const [imageFaces, setImageFaces] = useState(null);
-	const [imageTags, setImageTags] = useState(null);
-	const onChange = (imageList) => {
-		setImages(imageList);
+    const onChange = (imageList) => {
+        if (imageList.length !== 1) return;
 
-		if (imageList.length !== 1) return;
+        const file = imageList[0].file;
 
-		const file = imageList[0].file;
+        let file_reader = new FileReader();
+        file_reader.onload = async (e) => {
+            const ab_image = new aibumCore.Image(new Uint8Array(e.target.result));
+            if (ab_image.valid()) {
+                setImages(imageList);
+                setABImage(ab_image);
 
-		let file_reader = new FileReader();
-		file_reader.onload = async function () {
-			let data = new Uint8Array(file_reader.result);
+                const tags = await imageNet.getTags(ab_image, 5);
+                const faces = await faceNet.getFaces(ab_image);
 
-			// Copy image data to heap
-			let heap = aibumCore._malloc(data.length * data.BYTES_PER_ELEMENT);
-			aibumCore.HEAPU8.set(data, heap);
+                setImageTags(tags);
+                setImageFaces(faces);
+            }
+        };
+        file_reader.readAsArrayBuffer(file);
+    };
 
-			const ab_image = new aibumCore.Image(heap, data.length);
+    const onTransfer = async () => {
+        if (abImage === null || !abImage.valid())
+            return;
 
-			if (ab_image.valid()) {
-				let tags = await imageNet.getTags(ab_image, 5);
-				let faces = await faceNet.getFaces(ab_image);
+        const styleTransfer = await createStyleTransfer("./styles/candy.bin");
+        if (styleTransfer === null)
+            return;
+        const transfered = await styleTransfer.transfer(abImage, 512);
 
-				ab_image.delete(); // Delete image
+        const canvas = document.getElementById("transfered");
+        const ctx = canvas.getContext("2d");
+        ctx.canvas.width = transfered.width;
+        ctx.canvas.height = transfered.height;
+        let imageData = ctx.createImageData(transfered.width, transfered.height);
+        imageData.data.set(transfered.data);
+        ctx.putImageData(imageData, 0, 0);
+    };
 
-				tags = await tags.toArray();
-				faces = await faces.toArray();
-				for (const face of faces)
-					face.feature = await face.feature.toArray();
-
-				setImageTags(tags);
-				setImageFaces(faces);
-			}
-		};
-		file_reader.readAsArrayBuffer(file);
-	};
-	return (
-		<div className="App">
-			<div> { images.length === 0 ? <></> : <img src={images[0]['data_url']} alt="" height="400" /> } </div>
-			<ImageUploading multiple={false} value={images} onChange={onChange} maxNumber={1} dataURLKey="data_url">
-				{({imageList, onImageUpload, onImageRemoveAll, onImageUpdate, onImageRemove, isDragging, dragProps}) => (
-					<div>
-						<button style={isDragging ? { color: 'red' } : undefined}
-						        onClick={() => imageList.length === 0 ? onImageUpload() : onImageUpdate(0) }
-						        {...dragProps}>
-							Upload
-						</button>
-						<button onClick={onImageRemoveAll}>Remove</button>
-					</div>
-				)}
-			</ImageUploading>
-			<div> Top 5 tags : </div>
-			<div> <textarea readOnly value={JSON.stringify(imageTags)}/> </div>
-			<div> Detected {imageFaces === null ? 0 : imageFaces.length} faces : </div>
-			<div> <textarea readOnly value={JSON.stringify(imageFaces)}/> </div>
-		</div>
-	);
+    return (
+        <div className="App">
+            <div> { images.length === 0 ? <></> : <img src={images[0]['data_url']} alt="" height="400" /> } </div>
+            <ImageUploading multiple={false} value={images} onChange={onChange} maxNumber={1} dataURLKey="data_url">
+                {({imageList, onImageUpload, onImageRemoveAll, onImageUpdate, onImageRemove, isDragging, dragProps}) => (
+                    <div>
+                        <button style={isDragging ? { color: 'red' } : undefined}
+                                onClick={() => imageList.length === 0 ? onImageUpload() : onImageUpdate(0) }
+                                {...dragProps}>
+                            Upload
+                        </button>
+                    </div>
+                )}
+            </ImageUploading>
+            <div> Top 5 tags : </div>
+            <div> <textarea readOnly value={JSON.stringify(imageTags)}/> </div>
+            <div> Detected {imageFaces === null ? 0 : imageFaces.length} faces : </div>
+            <div> <textarea readOnly value={JSON.stringify(imageFaces)}/> </div>
+            <div> <button onClick={onTransfer}> style transfer </button> </div>
+            <canvas
+                id="transfered"
+            >
+                Your browser does not support the HTML canvas tag.
+            </canvas>
+        </div>
+    );
 }
 
 export default App;
