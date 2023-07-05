@@ -80,6 +80,11 @@ public:
 struct WASMFace {
 	int x, y, w, h;
 	e::val feature;
+
+	inline WASMFace() : x{}, y{}, w{}, h{}, feature(e::val::null()) {}
+	inline WASMFace(const aibum::Face &face)
+	    : x{face.x}, y{face.y}, w{face.w}, h{face.h}, feature{e::val::array(face.feature.begin(), face.feature.end())} {
+	}
 };
 
 class WASMFaceNet {
@@ -93,16 +98,10 @@ public:
 		if (!image.valid())
 			return e::val::array();
 		auto faces = m_face_net.GetFaces(m_detector, image.GetImage());
-		std::vector<WASMFace> wasm_faces(faces.size());
-		for (std::size_t i = 0; i < faces.size(); ++i) {
-			wasm_faces[i] = {
-			    faces[i].x,
-			    faces[i].y,
-			    faces[i].w,
-			    faces[i].h,
-			    e::val::array(faces[i].feature.begin(), faces[i].feature.end()),
-			};
-		}
+		std::vector<WASMFace> wasm_faces;
+		wasm_faces.reserve(faces.size());
+		for (const auto &face : faces)
+			wasm_faces.emplace_back(face);
 		return e::val::array(wasm_faces.begin(), wasm_faces.end());
 	}
 };
