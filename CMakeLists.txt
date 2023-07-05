@@ -25,6 +25,9 @@ set(NCNN_BUILD_EXAMPLES OFF)
 set(NCNN_BUILD_TOOLS OFF)
 set(NCNN_DISABLE_RTTI OFF)
 set(NCNN_DISABLE_EXCEPTION ON)
+set(NCNN_STDIO OFF)
+set(NCNN_STRING OFF)
+set(NCNN_INSTALL_SDK OFF)
 if (AIBUM_WASM_ONLY)
 	set(NCNN_RUNTIME_CPU OFF)
 	set(NCNN_SIMPLEOCV ON)
@@ -69,6 +72,8 @@ if (NOT AIBUM_WASM_ONLY)
 		target_link_libraries(aibum_style_test PRIVATE aibum_core ${OpenCV_LIBS})
 	endif ()
 else ()
+	target_compile_definitions(aibum_core PRIVATE -DAIBUM_CORE_WASM)
+
 	add_executable(aibum_core_wasm wasm/aibum_core_wasm.cpp)
 	target_include_directories(aibum_core_wasm PRIVATE wasm/dep/stb)
 	target_link_libraries(aibum_core_wasm PRIVATE aibum_core)
@@ -85,7 +90,6 @@ else ()
 			-sDISABLE_EXCEPTION_CATCHING=1
 			-sEXPORT_NAME=loadAIbumCore
 			-sALLOW_MEMORY_GROWTH
-			-sEXPORTED_FUNCTIONS=[_malloc]
 			-flto
 			-sTOTAL_MEMORY=512MB
 			-sMALLOC=emmalloc

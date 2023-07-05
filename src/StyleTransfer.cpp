@@ -6,11 +6,13 @@
 
 namespace aibum {
 
+#ifndef AIBUM_CORE_WASM
 StyleTransfer::StyleTransfer(const char *model_path) {
 	m_net.opt.lightmode = true;
 	m_net.load_param(styletransfer_param_bin);
 	m_net.load_model(model_path);
 }
+#endif
 
 StyleTransfer::StyleTransfer(const unsigned char *model_bin) {
 	m_net.opt.lightmode = true;
