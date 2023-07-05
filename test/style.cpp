@@ -9,7 +9,18 @@ int main(int argc, char **argv) {
 	cv::Mat image = cv::imread(argv[1]);
 
 	aibum::StyleTransfer style_transfer{argv[0]};
-	ncnn::Mat out = style_transfer.Transfer({image.data, image.cols, image.rows, ncnn::Mat::PIXEL_BGR});
+
+	int max_size = 720;
+	int target_w, target_h;
+	if (image.cols < image.rows) {
+		target_h = max_size;
+		target_w = max_size * image.cols / image.rows;
+	} else {
+		target_w = max_size;
+		target_h = max_size * image.rows / image.cols;
+	}
+	ncnn::Mat out =
+	    style_transfer.Transfer({image.data, image.cols, image.rows, ncnn::Mat::PIXEL_BGR}, target_w, target_h);
 
 	cv::Mat out_bgr;
 	out_bgr.create(out.h, out.w, CV_8UC3);

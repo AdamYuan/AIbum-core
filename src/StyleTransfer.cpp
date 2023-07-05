@@ -18,17 +18,8 @@ StyleTransfer::StyleTransfer(const unsigned char *model_bin) {
 	m_net.load_model(model_bin);
 }
 
-ncnn::Mat StyleTransfer::Transfer(const Image &image) {
-	const int target_size = 256;
-	int target_w, target_h;
-	if (image.width < image.height) {
-		target_h = target_size;
-		target_w = target_size * image.width / image.height;
-	} else {
-		target_w = target_size;
-		target_h = target_size * image.height / image.width;
-	}
-	ncnn::Mat in = Image2Mat<ncnn::Mat::PIXEL_RGB>(image, target_w, target_h);
+ncnn::Mat StyleTransfer::Transfer(const Image &image, int target_width, int target_height) {
+	ncnn::Mat in = Image2Mat<ncnn::Mat::PIXEL_RGB>(image, target_width, target_height);
 	ncnn::Mat out;
 	{
 		ncnn::Extractor ex = m_net.create_extractor();

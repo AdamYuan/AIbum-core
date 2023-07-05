@@ -16,6 +16,7 @@
 
 #include <FaceNet.hpp>
 #include <ImageNet.hpp>
+#include <StyleTransfer.hpp>
 
 namespace e = emscripten;
 
@@ -26,6 +27,10 @@ private:
 
 public:
 	inline WASMImage() = default;
+	inline explicit WASMImage(const ncnn::Mat &ncnn_rgb_image) : m_width{ncnn_rgb_image.w}, m_height{ncnn_rgb_image.h} {
+		m_data = (unsigned char *)stbi__malloc_mad3(m_width, m_height, 4, 0);
+		ncnn_rgb_image.to_pixels(m_data, ncnn::Mat::PIXEL_RGB2RGBA);
+	}
 	inline explicit WASMImage(const std::string &filename) { loadFromFile(filename); }
 	inline WASMImage(uintptr_t buffer_ptr, size_t size) { loadFromMemory(buffer_ptr, size); }
 	inline ~WASMImage() {
@@ -39,7 +44,7 @@ public:
 			m_data = nullptr;
 		}
 		int comp;
-		m_data = stbi_load_from_memory((const unsigned char *)buffer_ptr, (int)size, &m_width, &m_height, &comp, 3);
+		m_data = stbi_load_from_memory((const unsigned char *)buffer_ptr, (int)size, &m_width, &m_height, &comp, 4);
 	}
 	inline void loadFromFile(const std::string &filename) {
 		if (m_data) {
@@ -47,11 +52,15 @@ public:
 			m_data = nullptr;
 		}
 		int comp;
-		m_data = stbi_load(filename.c_str(), &m_width, &m_height, &comp, 3);
+		m_data = stbi_load(filename.c_str(), &m_width, &m_height, &comp, 4);
 	}
 	inline bool valid() const { return m_data; }
 
-	inline aibum::Image GetImage() const { return {m_data, m_width, m_height, ncnn::Mat::PIXEL_RGB}; }
+	inline int getWidth() const { return m_width; }
+	inline int getHeight() const { return m_height; }
+	inline e::val getData() const { return e::val(e::typed_memory_view(m_width * m_height * 4, m_data)); }
+
+	inline aibum::Image GetImage() const { return {m_data, m_width, m_height, ncnn::Mat::PIXEL_RGBA}; }
 };
 
 class WASMImageNet {
@@ -60,11 +69,17 @@ private:
 
 public:
 	inline WASMImageNet() : m_object() {}
-	inline std::vector<aibum::Tag> getTags(const WASMImage &image, int count) const {
+	inline e::val getTags(const WASMImage &image, int count) const {
 		if (!image.valid())
-			return {};
-		return m_object.GetTags(image.GetImage(), count);
+			return e::val::array();
+		auto tags = m_object.GetTags(image.GetImage(), count);
+		return e::val::array(tags.begin(), tags.end());
 	}
+};
+
+struct WASMFace {
+	int x, y, w, h;
+	e::val feature;
 };
 
 class WASMFaceNet {
@@ -74,60 +89,50 @@ private:
 
 public:
 	inline WASMFaceNet() : m_detector(), m_face_net() {}
-	inline std::vector<aibum::Face> getFaces(const WASMImage &image) const {
+	inline e::val getFaces(const WASMImage &image) const {
 		if (!image.valid())
 			return {};
-		return m_face_net.GetFaces(m_detector, image.GetImage());
+		auto faces = m_face_net.GetFaces(m_detector, image.GetImage());
+		std::vector<WASMFace> wasm_faces(faces.size());
+		for (std::size_t i = 0; i < faces.size(); ++i) {
+			wasm_faces[i].x = faces[i].x;
+			wasm_faces[i].y = faces[i].y;
+			wasm_faces[i].w = faces[i].w;
+			wasm_faces[i].h = faces[i].h;
+			wasm_faces[i].feature = e::val::array(faces[i].feature.begin(), faces[i].feature.end());
+		}
+		return e::val::array(wasm_faces.begin(), wasm_faces.end());
 	}
 };
 
-template <typename T> e::class_<std::vector<T>> my_register_vector(const char *name) {
-	typedef std::vector<T> VecType;
+class WASMStyleTransfer {
+private:
+	aibum::StyleTransfer m_style_transfer;
 
-	size_t (VecType::*size)() const = &VecType::size;
-
-	const auto toArray = +[](const VecType &v) -> e::val { return e::val::array(v.begin(), v.end()); };
-	const auto get = +[](const VecType &v, typename VecType ::size_type index) -> e::val {
-		return index < v.size() ? e::val(v[index]) : e::val::undefined();
-	};
-
-	return e::class_<VecType>(name)
-	    .template constructor<>()
-	    .function("size", size)
-	    .function("toArray", toArray)
-	    .function("get", get);
-}
-
-template <typename T, std::size_t L> e::class_<std::array<T, L>> my_register_array(const char *name) {
-	typedef std::array<T, L> ArrType;
-
-	size_t (ArrType::*size)() const = &ArrType::size;
-
-	const auto toArray = +[](const ArrType &v) -> e::val { return e::val::array(v.begin(), v.end()); };
-	const auto get = +[](const ArrType &v, typename ArrType ::size_type index) -> e::val {
-		return index < v.size() ? e::val(v[index]) : e::val::undefined();
-	};
-
-	return e::class_<ArrType>(name)
-	    .template constructor<>()
-	    .function("size", size)
-	    .function("toArray", toArray)
-	    .function("get", get);
-}
+public:
+	inline explicit WASMStyleTransfer(uintptr_t model_bin_ptr)
+	    : m_style_transfer((const unsigned char *)model_bin_ptr) {}
+	inline WASMImage transfer(const WASMImage &image, int target_size) {
+		int target_w, target_h;
+		if (image.getWidth() < image.getHeight()) {
+			target_h = target_size;
+			target_w = target_size * image.getWidth() / image.getHeight();
+		} else {
+			target_w = target_size;
+			target_h = target_size * image.getHeight() / image.getWidth();
+		}
+		return WASMImage{m_style_transfer.Transfer(image.GetImage(), target_w, target_h)};
+	}
+};
 
 EMSCRIPTEN_BINDINGS(AIbumCore) {
-	e::value_object<aibum::Face>("Face")
-	    .field("x", &aibum::Face::x)
-	    .field("y", &aibum::Face::y)
-	    .field("w", &aibum::Face::w)
-	    .field("h", &aibum::Face::h)
-	    .field("feature", &aibum::Face::feature);
+	e::value_object<WASMFace>("Face")
+	    .field("x", &WASMFace::x)
+	    .field("y", &WASMFace::y)
+	    .field("w", &WASMFace::w)
+	    .field("h", &WASMFace::h)
+	    .field("feature", &WASMFace::feature);
 	e::value_object<aibum::Tag>("Tag").field("index", &aibum::Tag::index).field("score", &aibum::Tag::score);
-
-	my_register_array<float, 128>("FaceFeature");
-
-	my_register_vector<aibum::Face>("FaceList");
-	my_register_vector<aibum::Tag>("TagList");
 
 	e::class_<WASMImage>("Image")
 	    .constructor()
@@ -135,9 +140,16 @@ EMSCRIPTEN_BINDINGS(AIbumCore) {
 	    .constructor<const std::string &>()
 	    .function("loadFromFile", &WASMImage::loadFromFile)
 	    .function("loadFromMemory", &WASMImage::loadFromMemory, e::allow_raw_pointers())
+	    .property("width", &WASMImage::getWidth)
+	    .property("height", &WASMImage::getHeight)
+	    .property("data", &WASMImage::getData)
 	    .function("valid", &WASMImage::valid);
 
 	e::class_<WASMImageNet>("ImageNet").constructor().function("getTags", &WASMImageNet::getTags);
 
 	e::class_<WASMFaceNet>("FaceNet").constructor().function("getFaces", &WASMFaceNet::getFaces);
+
+	e::class_<WASMStyleTransfer>("StyleTransfer")
+	    .constructor<uintptr_t>()
+	    .function("transfer", &WASMStyleTransfer::transfer);
 }
