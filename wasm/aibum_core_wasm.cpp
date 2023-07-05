@@ -20,6 +20,14 @@
 
 namespace e = emscripten;
 
+template <typename T> std::vector<T> vec_from_js_array(const e::val &v) {
+	const auto l = v["length"].as<unsigned>();
+	std::vector<T> rv(l);
+	emscripten::val mem_view{emscripten::typed_memory_view(l, rv.data())};
+	mem_view.call<void>("set", v);
+	return rv;
+}
+
 class WASMImage {
 private:
 	unsigned char *m_data{};
@@ -32,19 +40,20 @@ public:
 		ncnn_rgb_image.to_pixels(m_data, ncnn::Mat::PIXEL_RGB2RGBA);
 	}
 	inline explicit WASMImage(const std::string &filename) { loadFromFile(filename); }
-	inline WASMImage(uintptr_t buffer_ptr, size_t size) { loadFromMemory(buffer_ptr, size); }
+	inline WASMImage(const e::val &u8_array) { loadFromMemory(u8_array); }
 	inline ~WASMImage() {
 		if (m_data)
 			stbi_image_free(m_data);
 	}
 
-	inline void loadFromMemory(uintptr_t buffer_ptr, size_t size) {
+	inline void loadFromMemory(const e::val &u8_array) {
 		if (m_data) {
 			stbi_image_free(m_data);
 			m_data = nullptr;
 		}
+		std::vector<uint8_t> u8_vec = vec_from_js_array<uint8_t>(u8_array);
 		int comp;
-		m_data = stbi_load_from_memory((const unsigned char *)buffer_ptr, (int)size, &m_width, &m_height, &comp, 4);
+		m_data = stbi_load_from_memory(u8_vec.data(), (int)u8_vec.size(), &m_width, &m_height, &comp, 4);
 	}
 	inline void loadFromFile(const std::string &filename) {
 		if (m_data) {
@@ -137,7 +146,7 @@ EMSCRIPTEN_BINDINGS(AIbumCore) {
 
 	e::class_<WASMImage>("Image")
 	    .constructor()
-	    .constructor<uintptr_t, size_t>()
+	    .constructor<const e::val &>()
 	    .constructor<const std::string &>()
 	    .function("loadFromFile", &WASMImage::loadFromFile)
 	    .function("loadFromMemory", &WASMImage::loadFromMemory, e::allow_raw_pointers())
