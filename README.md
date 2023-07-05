@@ -62,6 +62,7 @@ function App() {
         if (styleTransfer === null)
             return;
         const transfered = await styleTransfer.transfer(abImage, 512);
+        styleTransfer.delete();
 
         const canvas = document.getElementById("transfered");
         const ctx = canvas.getContext("2d");
