@@ -1,6 +1,8 @@
 #include <emscripten/bind.h>
 #include <emscripten/html5.h>
 
+#include "aligned_allocator.hpp"
+
 #define STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_STATIC
 #define STBI_NO_BMP
@@ -12,17 +14,16 @@
 #define STBI_NO_PNM
 #include <stb_image.h>
 
-#include <string>
-
 #include <FaceNet.hpp>
 #include <ImageNet.hpp>
 #include <StyleTransfer.hpp>
 
 namespace e = emscripten;
 
-template <typename T> std::vector<T> vec_from_js_array(const e::val &v) {
+template <typename T, typename Allocator = std::allocator<T>>
+std::vector<T, Allocator> vec_from_js_array(const e::val &v) {
 	const auto l = v["length"].as<unsigned>();
-	std::vector<T> rv(l);
+	std::vector<T, Allocator> rv(l);
 	emscripten::val mem_view{emscripten::typed_memory_view(l, rv.data())};
 	mem_view.call<void>("set", v);
 	return rv;
@@ -108,11 +109,13 @@ public:
 
 class WASMStyleTransfer {
 private:
+	std::vector<uint8_t, AlignedAllocator<uint8_t, 4>> m_model_bin;
 	aibum::StyleTransfer m_style_transfer;
 
 public:
-	inline explicit WASMStyleTransfer(uintptr_t model_bin_ptr)
-	    : m_style_transfer((const unsigned char *)model_bin_ptr) {}
+	inline explicit WASMStyleTransfer(const e::val &val)
+	    : m_model_bin(vec_from_js_array<uint8_t, AlignedAllocator<uint8_t, 4>>(val)),
+	      m_style_transfer(m_model_bin.data()) {}
 	inline WASMImage transfer(const WASMImage &image, int target_size) {
 		int target_w, target_h;
 		if (image.getWidth() < image.getHeight()) {
@@ -149,6 +152,6 @@ EMSCRIPTEN_BINDINGS(AIbumCore) {
 	e::class_<WASMFaceNet>("FaceNet").constructor().function("getFaces", &WASMFaceNet::getFaces);
 
 	e::class_<WASMStyleTransfer>("StyleTransfer")
-	    .constructor<uintptr_t>()
+	    .constructor<const e::val &>()
 	    .function("transfer", &WASMStyleTransfer::transfer);
 }
