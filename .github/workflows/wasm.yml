@@ -36,6 +36,10 @@ jobs:
           mkdir build-threads
           mkdir build-simd-threads
           mkdir install
+          mkdir install/basic
+          mkdir install/simd
+          mkdir install/threads
+          mkdir install/simd-threads
 
       - name: Configure
         shell: bash
@@ -47,7 +51,7 @@ jobs:
             -DCMAKE_TOOLCHAIN_FILE=/usr/share/emscripten/cmake/Modules/Platform/Emscripten.cmake \
             -DAIBUM_WASM_ONLY=1 -DAIBUM_WASM_SIMD=0 -DAIBUM_WASM_THREADS=0 \
             -GNinja \
-            -DCMAKE_INSTALL_PREFIX:PATH=install
+            -DCMAKE_INSTALL_PREFIX:PATH=install/basic
           cmake \
             -S . \
             -B build-simd \
@@ -55,7 +59,7 @@ jobs:
             -DCMAKE_TOOLCHAIN_FILE=/usr/share/emscripten/cmake/Modules/Platform/Emscripten.cmake \
             -DAIBUM_WASM_ONLY=1 -DAIBUM_WASM_SIMD=1 -DAIBUM_WASM_THREADS=0 \
             -GNinja \
-            -DCMAKE_INSTALL_PREFIX:PATH=install
+            -DCMAKE_INSTALL_PREFIX:PATH=install/simd
           cmake \
             -S . \
             -B build-threads \
@@ -63,7 +67,7 @@ jobs:
             -DCMAKE_TOOLCHAIN_FILE=/usr/share/emscripten/cmake/Modules/Platform/Emscripten.cmake \
             -DAIBUM_WASM_ONLY=1 -DAIBUM_WASM_SIMD=0 -DAIBUM_WASM_THREADS=1 \
             -GNinja \
-            -DCMAKE_INSTALL_PREFIX:PATH=install
+            -DCMAKE_INSTALL_PREFIX:PATH=install/threads
           cmake \
             -S . \
             -B build-simd-threads \
@@ -71,7 +75,7 @@ jobs:
             -DCMAKE_TOOLCHAIN_FILE=/usr/share/emscripten/cmake/Modules/Platform/Emscripten.cmake \
             -DAIBUM_WASM_ONLY=1 -DAIBUM_WASM_SIMD=1 -DAIBUM_WASM_THREADS=1 \
             -GNinja \
-            -DCMAKE_INSTALL_PREFIX:PATH=install
+            -DCMAKE_INSTALL_PREFIX:PATH=install/simd-threads
 
       - name: Build
         shell: bash
