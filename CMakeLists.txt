@@ -23,12 +23,12 @@ target_include_directories(aibum_core PUBLIC include PRIVATE models/include)
 set(NCNN_BUILD_BENCHMARK OFF)
 set(NCNN_BUILD_EXAMPLES OFF)
 set(NCNN_BUILD_TOOLS OFF)
-set(NCNN_DISABLE_RTTI OFF)
-set(NCNN_DISABLE_EXCEPTION ON)
-set(NCNN_STDIO OFF)
-set(NCNN_STRING OFF)
 set(NCNN_INSTALL_SDK OFF)
 if (AIBUM_WASM_ONLY)
+	set(NCNN_DISABLE_RTTI OFF)
+	set(NCNN_DISABLE_EXCEPTION ON)
+	set(NCNN_STDIO OFF)
+	set(NCNN_STRING OFF)
 	set(NCNN_RUNTIME_CPU OFF)
 	set(NCNN_SIMPLEOCV ON)
 	set(NCNN_AVX2 OFF)
@@ -73,6 +73,10 @@ if (NOT AIBUM_WASM_ONLY)
 	endif ()
 else ()
 	target_compile_definitions(aibum_core PRIVATE -DAIBUM_CORE_WASM)
+	target_compile_options(aibum_core PRIVATE
+			-fno-exceptions
+			-flto
+			)
 
 	add_executable(aibum_core_wasm wasm/aibum_core_wasm.cpp)
 	target_include_directories(aibum_core_wasm PRIVATE wasm/dep/stb)
@@ -80,7 +84,6 @@ else ()
 	target_compile_options(aibum_core_wasm PRIVATE
 			-fno-exceptions
 			-flto
-			-DEMSCRIPTEN_HAS_UNBOUND_TYPE_NAMES=0
 			)
 	target_link_options(aibum_core_wasm PRIVATE
 			--bind
@@ -94,6 +97,19 @@ else ()
 			-sTOTAL_MEMORY=512MB
 			-sMALLOC=emmalloc
 			)
+
+	if (AIBUM_WASM_SIMD)
+		target_compile_options(aibum_core PRIVATE
+				-msse2
+				-msse
+				-msimd128
+				)
+		target_compile_options(aibum_core_wasm PRIVATE
+				-msse2
+				-msse
+				-msimd128
+				)
+	endif ()
 
 	install(FILES
 			"$<TARGET_FILE_DIR:aibum_core_wasm>/aibum_core_wasm.js"

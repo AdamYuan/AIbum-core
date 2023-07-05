@@ -23,10 +23,18 @@ jobs:
         with:
           submodules: true
 
-      - name: Install dependencies
+      - name: Install Ninja
+        shell: bash
         run: |
-          sudo apt-get update
-          sudo apt-get install ninja-build emscripten
+          sudo apt-get install ninja-build
+
+      - name: Install Emscripten
+        shell: bash
+        run: |
+          git clone https://github.com/emscripten-core/emsdk.git
+          cd emsdk
+          ./emsdk install latest
+          ./emsdk activate latest
 
       - name: Make Directories
         shell: bash
@@ -44,11 +52,12 @@ jobs:
       - name: Configure
         shell: bash
         run: |
+          source emsdk/emsdk_env.sh
           cmake \
             -S . \
             -B build-basic \
             -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_TOOLCHAIN_FILE=/usr/share/emscripten/cmake/Modules/Platform/Emscripten.cmake \
+            -DCMAKE_TOOLCHAIN_FILE=emsdk/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake \
             -DAIBUM_WASM_ONLY=1 -DAIBUM_WASM_SIMD=0 -DAIBUM_WASM_THREADS=0 \
             -GNinja \
             -DCMAKE_INSTALL_PREFIX:PATH=install/basic
@@ -56,7 +65,7 @@ jobs:
             -S . \
             -B build-simd \
             -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_TOOLCHAIN_FILE=/usr/share/emscripten/cmake/Modules/Platform/Emscripten.cmake \
+            -DCMAKE_TOOLCHAIN_FILE=emsdk/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake \
             -DAIBUM_WASM_ONLY=1 -DAIBUM_WASM_SIMD=1 -DAIBUM_WASM_THREADS=0 \
             -GNinja \
             -DCMAKE_INSTALL_PREFIX:PATH=install/simd
@@ -64,7 +73,7 @@ jobs:
             -S . \
             -B build-threads \
             -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_TOOLCHAIN_FILE=/usr/share/emscripten/cmake/Modules/Platform/Emscripten.cmake \
+            -DCMAKE_TOOLCHAIN_FILE=emsdk/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake \
             -DAIBUM_WASM_ONLY=1 -DAIBUM_WASM_SIMD=0 -DAIBUM_WASM_THREADS=1 \
             -GNinja \
             -DCMAKE_INSTALL_PREFIX:PATH=install/threads
@@ -72,7 +81,7 @@ jobs:
             -S . \
             -B build-simd-threads \
             -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_TOOLCHAIN_FILE=/usr/share/emscripten/cmake/Modules/Platform/Emscripten.cmake \
+            -DCMAKE_TOOLCHAIN_FILE=emsdk/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake \
             -DAIBUM_WASM_ONLY=1 -DAIBUM_WASM_SIMD=1 -DAIBUM_WASM_THREADS=1 \
             -GNinja \
             -DCMAKE_INSTALL_PREFIX:PATH=install/simd-threads
@@ -80,10 +89,10 @@ jobs:
       - name: Build
         shell: bash
         run: |
-          cmake --build build-basic
-          cmake --build build-simd
-          cmake --build build-threads
-          cmake --build build-simd-threads
+          ninja -C build-basic
+          ninja -C build-simd
+          ninja -C build-threads
+          ninja -C build-simd-threads
 
       - name: Install Strip
         shell: bash
