@@ -16,11 +16,8 @@
 #ifndef NCNN_C_API_H
 #define NCNN_C_API_H
 
-#include "platform.h"
-
-#if NCNN_C_API
-
 #include <stddef.h>
+#include "platform.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -51,19 +48,12 @@ NCNN_EXPORT void ncnn_option_destroy(ncnn_option_t opt);
 NCNN_EXPORT int ncnn_option_get_num_threads(const ncnn_option_t opt);
 NCNN_EXPORT void ncnn_option_set_num_threads(ncnn_option_t opt, int num_threads);
 
-NCNN_EXPORT int ncnn_option_get_use_local_pool_allocator(const ncnn_option_t opt);
-NCNN_EXPORT void ncnn_option_set_use_local_pool_allocator(ncnn_option_t opt, int use_local_pool_allocator);
-
-NCNN_EXPORT void ncnn_option_set_blob_allocator(ncnn_option_t opt, ncnn_allocator_t allocator);
-NCNN_EXPORT void ncnn_option_set_workspace_allocator(ncnn_option_t opt, ncnn_allocator_t allocator);
-
 NCNN_EXPORT int ncnn_option_get_use_vulkan_compute(const ncnn_option_t opt);
 NCNN_EXPORT void ncnn_option_set_use_vulkan_compute(ncnn_option_t opt, int use_vulkan_compute);
 
 /* mat api */
 typedef struct __ncnn_mat_t* ncnn_mat_t;
 
-NCNN_EXPORT ncnn_mat_t ncnn_mat_create();
 NCNN_EXPORT ncnn_mat_t ncnn_mat_create_1d(int w, ncnn_allocator_t allocator);
 NCNN_EXPORT ncnn_mat_t ncnn_mat_create_2d(int w, int h, ncnn_allocator_t allocator);
 NCNN_EXPORT ncnn_mat_t ncnn_mat_create_3d(int w, int h, int c, ncnn_allocator_t allocator);
@@ -200,7 +190,7 @@ struct NCNN_EXPORT __ncnn_layer_t
     int (*destroy_pipeline)(ncnn_layer_t layer, const ncnn_option_t opt);
 
     int (*forward_1)(const ncnn_layer_t layer, const ncnn_mat_t bottom_blob, ncnn_mat_t* top_blob, const ncnn_option_t opt);
-    int (*forward_n)(const ncnn_layer_t layer, const ncnn_mat_t* bottom_blobs, int n, ncnn_mat_t* top_blobs, int n2, const ncnn_option_t opt);
+    int (*forward_n)(const ncnn_layer_t layer, const ncnn_mat_t* bottom_blobs, int n, ncnn_mat_t** top_blobs, int n2, const ncnn_option_t opt);
 
     int (*forward_inplace_1)(const ncnn_layer_t layer, ncnn_mat_t bottom_top_blob, const ncnn_option_t opt);
     int (*forward_inplace_n)(const ncnn_layer_t layer, ncnn_mat_t* bottom_top_blobs, int n, const ncnn_option_t opt);
@@ -271,7 +261,6 @@ struct __ncnn_net_t
 NCNN_EXPORT ncnn_net_t ncnn_net_create();
 NCNN_EXPORT void ncnn_net_destroy(ncnn_net_t net);
 
-NCNN_EXPORT ncnn_option_t ncnn_net_get_option(ncnn_net_t net);
 NCNN_EXPORT void ncnn_net_set_option(ncnn_net_t net, ncnn_option_t opt);
 
 #if NCNN_STRING
@@ -303,15 +292,6 @@ NCNN_EXPORT int ncnn_net_load_model_datareader(ncnn_net_t net, const ncnn_datare
 
 NCNN_EXPORT void ncnn_net_clear(ncnn_net_t net);
 
-NCNN_EXPORT int ncnn_net_get_input_count(const ncnn_net_t net);
-NCNN_EXPORT int ncnn_net_get_output_count(const ncnn_net_t net);
-#if NCNN_STRING
-NCNN_EXPORT const char* ncnn_net_get_input_name(const ncnn_net_t net, int i);
-NCNN_EXPORT const char* ncnn_net_get_output_name(const ncnn_net_t net, int i);
-#endif /* NCNN_STRING */
-NCNN_EXPORT int ncnn_net_get_input_index(const ncnn_net_t net, int i);
-NCNN_EXPORT int ncnn_net_get_output_index(const ncnn_net_t net, int i);
-
 /* extractor api */
 typedef struct __ncnn_extractor_t* ncnn_extractor_t;
 
@@ -330,7 +310,5 @@ NCNN_EXPORT int ncnn_extractor_extract_index(ncnn_extractor_t ex, int index, ncn
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
-
-#endif /* NCNN_C_API */
 
 #endif /* NCNN_C_API_H */

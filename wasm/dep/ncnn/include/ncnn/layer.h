@@ -84,7 +84,8 @@ public:
     // shader tensor storage
     bool support_tensor_storage;
 
-    bool support_reserved_00;
+    // TODO drop these fields
+    bool support_weight_fp16_storage;
 
     bool support_reserved_0;
     bool support_reserved_1;
@@ -96,9 +97,10 @@ public:
     bool support_reserved_7;
     bool support_reserved_8;
     bool support_reserved_9;
-
-    // feature disabled set
-    int featmask;
+    bool support_reserved_10;
+    bool support_reserved_11;
+    bool support_reserved_12;
+    bool support_reserved_13;
 
 public:
     // implement inference
@@ -182,16 +184,6 @@ struct custom_layer_registry_entry
     // layer type name
     const char* name;
 #endif // NCNN_STRING
-    // layer factory entry
-    layer_creator_func creator;
-    layer_destroyer_func destroyer;
-    void* userdata;
-};
-
-struct overwrite_builtin_layer_registry_entry
-{
-    // layer type index
-    int typeindex;
     // layer factory entry
     layer_creator_func creator;
     layer_destroyer_func destroyer;

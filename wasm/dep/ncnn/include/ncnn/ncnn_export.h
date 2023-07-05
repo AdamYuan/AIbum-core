@@ -22,7 +22,7 @@
 #endif
 
 #ifndef NCNN_DEPRECATED
-#  define NCNN_DEPRECATED __attribute__ ((__deprecated__))
+#  define NCNN_DEPRECATED 
 #endif
 
 #ifndef NCNN_DEPRECATED_EXPORT

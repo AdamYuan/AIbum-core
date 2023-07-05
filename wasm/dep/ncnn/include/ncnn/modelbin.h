@@ -31,13 +31,11 @@ public:
     // 2 = float16
     // 3 = int8
     // load vec
-    virtual Mat load(int w, int type) const;
+    virtual Mat load(int w, int type) const = 0;
     // load image
     virtual Mat load(int w, int h, int type) const;
     // load dim
     virtual Mat load(int w, int h, int c, int type) const;
-    // load cube
-    virtual Mat load(int w, int h, int d, int c, int type) const;
 };
 
 class ModelBinFromDataReaderPrivate;
