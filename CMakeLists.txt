@@ -4,6 +4,9 @@ project(aibum-core)
 set(CMAKE_CXX_STANDARD 17)
 
 option(AIBUM_WASM_ONLY "build WASM only" ON)
+option(AIBUM_WASM_SIMD "build WASM with SIMD enabled" ON)
+option(AIBUM_WASM_THREADS "build WASM with Threads enabled" ON)
+
 option(AIBUM_TEST "build tests" ON)
 
 add_library(aibum_core STATIC
@@ -17,13 +20,38 @@ add_library(aibum_core STATIC
 		)
 target_include_directories(aibum_core PUBLIC include PRIVATE models/include)
 
+set(NCNN_BUILD_BENCHMARK OFF)
+set(NCNN_BUILD_EXAMPLES OFF)
+set(NCNN_BUILD_TOOLS OFF)
+set(NCNN_DISABLE_RTTI OFF)
+set(NCNN_DISABLE_EXCEPTION ON)
+if (AIBUM_WASM_ONLY)
+	set(NCNN_RUNTIME_CPU OFF)
+	set(NCNN_SIMPLEOCV ON)
+	set(NCNN_AVX2 OFF)
+	set(NCNN_AVX OFF)
+
+	if (AIBUM_WASM_SIMD)
+		set(NCNN_SSE2 ON)
+	else ()
+		set(NCNN_SSE2 OFF)
+	endif ()
+
+	if (AIBUM_WASM_THREADS)
+		set(NCNN_THREADS ON)
+		set(NCNN_OPENMP ON)
+		set(NCNN_SIMPLEOMP ON)
+	else ()
+		set(NCNN_THREADS OFF)
+		set(NCNN_OPENMP OFF)
+		set(NCNN_SIMPLEOMP OFF)
+	endif ()
+endif ()
+add_subdirectory(dep/ncnn)
+
+target_link_libraries(aibum_core PUBLIC ncnn)
+
 if (NOT AIBUM_WASM_ONLY)
-	option(NCNN_BUILD_BENCHMARK OFF)
-	add_subdirectory(dep/ncnn)
-
-	# find_package(ncnn REQUIRED)
-	target_link_libraries(aibum_core PUBLIC ncnn)
-
 	if (AIBUM_TEST)
 		find_package(OpenCV REQUIRED)
 
@@ -40,45 +68,30 @@ if (NOT AIBUM_WASM_ONLY)
 		target_link_libraries(aibum_style_test PRIVATE aibum_core ${OpenCV_LIBS})
 	endif ()
 else ()
-	target_include_directories(aibum_core PUBLIC wasm/dep/ncnn/include)
+	add_executable(aibum_core_wasm wasm/aibum_core_wasm.cpp)
+	target_include_directories(aibum_core_wasm PRIVATE wasm/dep/stb)
+	target_link_libraries(aibum_core_wasm PRIVATE aibum_core)
+	target_compile_options(aibum_core_wasm PRIVATE
+			-fno-exceptions
+			-flto
+			-DEMSCRIPTEN_HAS_UNBOUND_TYPE_NAMES=0
+			)
+	target_link_options(aibum_core_wasm PRIVATE
+			--bind
+			-sENVIRONMENT=web
+			-sMODULARIZE=1
+			-sEXPORT_ES6=1
+			-sDISABLE_EXCEPTION_CATCHING=1
+			-sEXPORT_NAME=loadAIbumCore
+			-sALLOW_MEMORY_GROWTH
+			-sEXPORTED_FUNCTIONS=[_malloc]
+			-flto
+			-sTOTAL_MEMORY=512MB
+			-sMALLOC=emmalloc
+			)
 
-	set(AIBUM_WASM_TYPES basic simd threads simd-threads)
-
-	foreach (TYPE ${AIBUM_WASM_TYPES})
-		add_library(ncnn-${TYPE} INTERFACE)
-		target_link_libraries(ncnn-${TYPE} INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/wasm/dep/ncnn/lib/${TYPE}/libncnn.a")
-
-		set(FLAGS "")
-		string(FIND ${TYPE} "simd" USE_SIMD)
-		if (USE_SIMD GREATER -1)
-			list(APPEND FLAGS "-msimd128")
-		endif ()
-
-		add_executable(aibum_core_wasm-${TYPE} wasm/aibum_core_wasm.cpp)
-		target_include_directories(aibum_core_wasm-${TYPE} PRIVATE wasm/dep/stb)
-		target_link_libraries(aibum_core_wasm-${TYPE} PRIVATE aibum_core ncnn-${TYPE})
-		target_compile_options(aibum_core_wasm-${TYPE} PRIVATE
-				-fno-exceptions
-				-flto
-				${FLAGS}
-				)
-		target_link_options(aibum_core_wasm-${TYPE} PRIVATE
-				--bind
-				-sENVIRONMENT=web
-				-sMODULARIZE=1
-				-sEXPORT_ES6=1
-				-sDISABLE_EXCEPTION_CATCHING=1
-				-sEXPORT_NAME=loadAIbumCore
-				-sALLOW_MEMORY_GROWTH
-				-sEXPORTED_FUNCTIONS=[_malloc]
-				-flto
-				-sTOTAL_MEMORY=512MB
-				-sMALLOC=emmalloc
-				)
-
-		install(FILES
-				"$<TARGET_FILE_DIR:aibum_core_wasm-${TYPE}>/aibum_core_wasm-${TYPE}.js"
-				"$<TARGET_FILE_DIR:aibum_core_wasm-${TYPE}>/aibum_core_wasm-${TYPE}.wasm"
-				DESTINATION .)
-	endforeach ()
+	install(FILES
+			"$<TARGET_FILE_DIR:aibum_core_wasm>/aibum_core_wasm.js"
+			"$<TARGET_FILE_DIR:aibum_core_wasm>/aibum_core_wasm.wasm"
+			DESTINATION .)
 endif ()

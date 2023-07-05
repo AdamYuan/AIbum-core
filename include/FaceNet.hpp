@@ -3,7 +3,7 @@
 #include <Image.hpp>
 #include <SCRFD.hpp>
 #include <array>
-#include <ncnn/net.h>
+#include <net.h>
 
 namespace aibum {
 

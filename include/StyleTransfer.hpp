@@ -1,8 +1,8 @@
 #pragma once
 
 #include "Image.hpp"
-#include <ncnn/mat.h>
-#include <ncnn/net.h>
+#include <mat.h>
+#include <net.h>
 
 namespace aibum {
 

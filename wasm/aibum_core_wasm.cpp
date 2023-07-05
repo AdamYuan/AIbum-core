@@ -24,7 +24,7 @@ template <typename T, typename Allocator = std::allocator<T>>
 std::vector<T, Allocator> vec_from_js_array(const e::val &v) {
 	const auto l = v["length"].as<unsigned>();
 	std::vector<T, Allocator> rv(l);
-	emscripten::val mem_view{emscripten::typed_memory_view(l, rv.data())};
+	e::val mem_view{e::typed_memory_view(l, rv.data())};
 	mem_view.call<void>("set", v);
 	return rv;
 }
