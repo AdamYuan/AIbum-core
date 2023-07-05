@@ -47,6 +47,7 @@ if (AIBUM_WASM_ONLY)
 		set(NCNN_SIMPLEOMP OFF)
 	endif ()
 endif ()
+set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
 add_subdirectory(dep/ncnn)
 
 target_link_libraries(aibum_core PUBLIC ncnn)
