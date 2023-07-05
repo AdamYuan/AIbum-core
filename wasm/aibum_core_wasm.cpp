@@ -91,15 +91,17 @@ public:
 	inline WASMFaceNet() : m_detector(), m_face_net() {}
 	inline e::val getFaces(const WASMImage &image) const {
 		if (!image.valid())
-			return {};
+			return e::val::array();
 		auto faces = m_face_net.GetFaces(m_detector, image.GetImage());
 		std::vector<WASMFace> wasm_faces(faces.size());
 		for (std::size_t i = 0; i < faces.size(); ++i) {
-			wasm_faces[i].x = faces[i].x;
-			wasm_faces[i].y = faces[i].y;
-			wasm_faces[i].w = faces[i].w;
-			wasm_faces[i].h = faces[i].h;
-			wasm_faces[i].feature = e::val::array(faces[i].feature.begin(), faces[i].feature.end());
+			wasm_faces[i] = {
+			    faces[i].x,
+			    faces[i].y,
+			    faces[i].w,
+			    faces[i].h,
+			    e::val::array(faces[i].feature.begin(), faces[i].feature.end()),
+			};
 		}
 		return e::val::array(wasm_faces.begin(), wasm_faces.end());
 	}
