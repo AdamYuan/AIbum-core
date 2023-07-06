@@ -9,14 +9,15 @@ import loadAIbumCore from './core/AIbumCore';
 const aibumCore = await loadAIbumCore();
 const faceNet = new aibumCore.FaceNet();
 const imageNet = new aibumCore.ImageNet();
+const styleTransfer = new aibumCore.StyleTransfer();
 
-function createStyleTransfer(uri) {
+function getStyleModel(uri) {
     return new Promise((resolve) => {
         fetch(uri).then(
             async (res) => {
                 var fr = new FileReader();
                 fr.onload = (e) => {
-                    resolve(new aibumCore.StyleTransfer(new Uint8Array(e.target.result)));
+                    resolve(new Uint8Array(e.target.result));
                 };
                 fr.onerror = () => { resolve(null); };
                 fr.readAsArrayBuffer(await res.blob());
@@ -29,6 +30,7 @@ function createStyleTransfer(uri) {
 function App() {
     const [images, setImages] = useState([]);
     const [abImage, setABImage] = useState(null);
+
     const [imageFaces, setImageFaces] = useState(null);
     const [imageTags, setImageTags] = useState(null);
 
@@ -40,9 +42,13 @@ function App() {
         let file_reader = new FileReader();
         file_reader.onload = async (e) => {
             const ab_image = new aibumCore.Image(new Uint8Array(e.target.result));
-            if (ab_image.valid()) {
+            if (ab_image.valid) {
                 setImages(imageList);
-                setABImage(ab_image);
+                setABImage(prev => {
+                    if (prev !== null)
+                        prev.free();
+                    return ab_image;
+                });
 
                 const tags = await imageNet.getTags(ab_image, 5);
                 const faces = await faceNet.getFaces(ab_image);
@@ -54,23 +60,31 @@ function App() {
         file_reader.readAsArrayBuffer(file);
     };
 
-    const onTransfer = async () => {
-        if (abImage === null || !abImage.valid())
-            return;
+    const onStyleChange = async (e) => {
+        if (e.target.value !== "") {
+            const model = await getStyleModel("./styles/" + e.target.value + ".bin");
+            if (model !== null)
+                styleTransfer.load(model);
+        } else
+            styleTransfer.free();
+    }
 
-        const styleTransfer = await createStyleTransfer("./styles/candy.bin");
-        if (styleTransfer === null)
+    const onStyleTransfer = async () => {
+        if (abImage === null || !abImage.valid)
             return;
-        const transfered = await styleTransfer.transfer(abImage, 512);
-        styleTransfer.delete();
+        const styled = await styleTransfer.transfer(abImage, 512);
+        if (!styled.valid)
+            return;
 
         const canvas = document.getElementById("transfered");
         const ctx = canvas.getContext("2d");
-        ctx.canvas.width = transfered.width;
-        ctx.canvas.height = transfered.height;
-        let imageData = ctx.createImageData(transfered.width, transfered.height);
-        imageData.data.set(transfered.data);
+        ctx.canvas.width = styled.width;
+        ctx.canvas.height = styled.height;
+        let imageData = ctx.createImageData(styled.width, styled.height);
+        imageData.data.set(styled.data);
         ctx.putImageData(imageData, 0, 0);
+
+        styled.free();
     };
 
     return (
@@ -91,7 +105,17 @@ function App() {
             <div> <textarea readOnly value={JSON.stringify(imageTags)}/> </div>
             <div> Detected {imageFaces === null ? 0 : imageFaces.length} faces : </div>
             <div> <textarea readOnly value={JSON.stringify(imageFaces)}/> </div>
-            <div> <button onClick={onTransfer}> style transfer </button> </div>
+            <div>
+                <select name="styles" id="style-select" onChange={onStyleChange}>
+                    <option value="">--</option>
+                    <option value="candy">Candy</option>
+                    <option value="mosaic">Mosaic</option>
+                    <option value="pointilism">Pointilism</option>
+                    <option value="rain_princess">Rain Princess</option>
+                    <option value="udnie">Udnie</option>
+                </select>
+                <button onClick={onStyleTransfer}> style transfer </button>
+            </div>
             <canvas
                 id="transfered"
             >
