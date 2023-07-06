@@ -88,7 +88,6 @@ else ()
 			)
 	target_link_options(aibum_core_wasm PRIVATE
 			--bind
-			-sENVIRONMENT=web
 			-sMODULARIZE=1
 			-sEXPORT_ES6=1
 			-sDISABLE_EXCEPTION_CATCHING=1
@@ -109,10 +108,29 @@ else ()
 				-msse
 				-msimd128
 				)
+		target_compile_definitions(aibum_core_wasm PRIVATE -DAIBUM_WASM_SIMD)
+	endif ()
+
+	if (AIBUM_WASM_THREADS)
+		target_link_options(aibum_core_wasm PRIVATE
+				-sENVIRONMENT=web,worker
+				-sUSE_PTHREADS=1
+				-sPTHREAD_POOL_SIZE=15
+				)
+		target_compile_definitions(aibum_core_wasm PRIVATE -DAIBUM_WASM_THREADS)
+	else ()
+		target_link_options(aibum_core_wasm PRIVATE
+				-sENVIRONMENT=web
+				)
 	endif ()
 
 	install(FILES
 			"$<TARGET_FILE_DIR:aibum_core_wasm>/aibum_core_wasm.js"
 			"$<TARGET_FILE_DIR:aibum_core_wasm>/aibum_core_wasm.wasm"
 			DESTINATION .)
+	if (AIBUM_WASM_THREADS)
+		install(FILES
+				"$<TARGET_FILE_DIR:aibum_core_wasm>/aibum_core_wasm.worker.js"
+				DESTINATION .)
+	endif ()
 endif ()
