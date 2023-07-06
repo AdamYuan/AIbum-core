@@ -19,6 +19,7 @@ public:
 	FaceNet();
 	FaceFeature GetFeature(const Image &image) const;
 	std::vector<Face> GetFaces(const SCRFD &scrfd, const Image &image) const;
+	inline void Clear() { m_net.clear(); }
 
 private:
 	ncnn::Net m_net;

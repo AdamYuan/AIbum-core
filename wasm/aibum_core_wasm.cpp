@@ -38,12 +38,11 @@ template <typename Func> inline std::invoke_result_t<Func> run_func(Func &&func)
 }
 
 template <typename T, typename Allocator = std::allocator<T>>
-std::vector<T, Allocator> vec_from_js_array(const e::val &v) {
+inline void js_array_to_vec(const e::val &v, std::vector<T, Allocator> *p_vec) {
 	const auto l = v["length"].as<unsigned>();
-	std::vector<T, Allocator> rv(l);
-	e::val mem_view{e::typed_memory_view(l, rv.data())};
+	p_vec->resize(l);
+	e::val mem_view{e::typed_memory_view(l, p_vec->data())};
 	mem_view.call<void>("set", v);
-	return rv;
 }
 
 class WASMImage {
@@ -57,18 +56,22 @@ public:
 		m_data = (unsigned char *)stbi__malloc_mad3(m_width, m_height, 4, 0);
 		ncnn_rgb_image.to_pixels(m_data, ncnn::Mat::PIXEL_RGB2RGBA);
 	}
-	inline explicit WASMImage(const e::val &u8_array) { loadFromMemory(u8_array); }
-	inline ~WASMImage() {
-		if (m_data)
-			stbi_image_free(m_data);
-	}
-
-	inline void loadFromMemory(const e::val &u8_array) {
+	inline explicit WASMImage(const e::val &u8_array) { load(u8_array); }
+	inline ~WASMImage() { free(); }
+	inline void free() {
 		if (m_data) {
 			stbi_image_free(m_data);
 			m_data = nullptr;
 		}
-		std::vector<uint8_t> u8_vec = vec_from_js_array<uint8_t>(u8_array);
+	}
+
+	inline void load(const e::val &u8_array) {
+		if (m_data) {
+			stbi_image_free(m_data);
+			m_data = nullptr;
+		}
+		std::vector<uint8_t> u8_vec;
+		js_array_to_vec<uint8_t>(u8_array, &u8_vec);
 		int comp;
 		m_data = stbi_load_from_memory(u8_vec.data(), (int)u8_vec.size(), &m_width, &m_height, &comp, 4);
 	}
@@ -93,6 +96,7 @@ public:
 		auto tags = run_func([this, &image, count]() { return m_object.GetTags(image.GetImage(), count); });
 		return e::val::array(tags.begin(), tags.end());
 	}
+	inline void free() { m_object.Clear(); }
 };
 
 struct WASMFace {
@@ -122,6 +126,10 @@ public:
 			wasm_faces.emplace_back(face);
 		return e::val::array(wasm_faces.begin(), wasm_faces.end());
 	}
+	inline void free() {
+		m_face_net.Clear();
+		m_detector.Clear();
+	}
 };
 
 class WASMStyleTransfer {
@@ -130,10 +138,15 @@ private:
 	aibum::StyleTransfer m_style_transfer;
 
 public:
-	inline explicit WASMStyleTransfer(const e::val &val)
-	    : m_model_bin(vec_from_js_array<uint8_t, AlignedAllocator<uint8_t, 4>>(val)),
-	      m_style_transfer(m_model_bin.data()) {}
-	inline WASMImage transfer(const WASMImage &image, int target_size) {
+	inline WASMStyleTransfer() = default;
+	inline explicit WASMStyleTransfer(const e::val &val) { load(val); }
+	inline void load(const e::val &val) {
+		m_style_transfer.Clear();
+		js_array_to_vec<uint8_t, AlignedAllocator<uint8_t, 4>>(val, &m_model_bin);
+		m_style_transfer.LoadFromMemory(m_model_bin.data());
+	}
+	inline bool valid() const { return !m_model_bin.empty(); }
+	inline WASMImage transfer(const WASMImage &image, int target_size) const {
 		int target_w, target_h;
 		if (image.getWidth() < image.getHeight()) {
 			target_h = target_size;
@@ -146,6 +159,11 @@ public:
 			return m_style_transfer.Transfer(image.GetImage(), target_w, target_h);
 		});
 		return WASMImage{result};
+	}
+	inline void free() {
+		m_style_transfer.Clear();
+		m_model_bin.clear();
+		m_model_bin.shrink_to_fit();
 	}
 };
 
@@ -161,17 +179,28 @@ EMSCRIPTEN_BINDINGS(AIbumCore) {
 	e::class_<WASMImage>("Image")
 	    .constructor()
 	    .constructor<const e::val &>()
-	    .function("loadFromMemory", &WASMImage::loadFromMemory, e::allow_raw_pointers())
+	    .function("load", &WASMImage::load)
+		.function("free", &WASMImage::free)
 	    .property("width", &WASMImage::getWidth)
 	    .property("height", &WASMImage::getHeight)
 	    .property("data", &WASMImage::getData)
-	    .function("valid", &WASMImage::valid);
+	    .property("valid", &WASMImage::valid);
 
-	e::class_<WASMImageNet>("ImageNet").constructor().function("getTags", &WASMImageNet::getTags);
+	e::class_<WASMImageNet>("ImageNet")
+	    .constructor()
+	    .function("getTags", &WASMImageNet::getTags)
+	    .function("free", &WASMImageNet::free);
 
-	e::class_<WASMFaceNet>("FaceNet").constructor().function("getFaces", &WASMFaceNet::getFaces);
+	e::class_<WASMFaceNet>("FaceNet")
+	    .constructor()
+	    .function("getFaces", &WASMFaceNet::getFaces)
+	    .function("free", &WASMFaceNet::free);
 
 	e::class_<WASMStyleTransfer>("StyleTransfer")
+	    .constructor()
 	    .constructor<const e::val &>()
-	    .function("transfer", &WASMStyleTransfer::transfer);
+	    .property("valid", &WASMStyleTransfer::valid)
+	    .function("load", &WASMStyleTransfer::load)
+	    .function("transfer", &WASMStyleTransfer::transfer)
+	    .function("free", &WASMStyleTransfer::free);
 }

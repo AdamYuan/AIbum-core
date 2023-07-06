@@ -13,8 +13,8 @@ struct FaceBox {
 class SCRFD {
 public:
 	SCRFD();
-
 	std::vector<FaceBox> Detect(const Image &image) const;
+	inline void Clear() { m_net.clear(); }
 
 private:
 	struct BBox {

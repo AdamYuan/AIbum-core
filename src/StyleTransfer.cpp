@@ -7,20 +7,20 @@
 namespace aibum {
 
 #ifndef AIBUM_CORE_WASM
-StyleTransfer::StyleTransfer(const char *model_path) {
+void StyleTransfer::LoadFromFile(const char *model_path) {
 	m_net.opt.lightmode = true;
 	m_net.load_param(styletransfer_param_bin);
 	m_net.load_model(model_path);
 }
 #endif
 
-StyleTransfer::StyleTransfer(const unsigned char *model_bin) {
+void StyleTransfer::LoadFromMemory(const unsigned char *model_bin) {
 	m_net.opt.lightmode = true;
 	m_net.load_param(styletransfer_param_bin);
 	m_net.load_model(model_bin);
 }
 
-ncnn::Mat StyleTransfer::Transfer(const Image &image, int target_width, int target_height) {
+ncnn::Mat StyleTransfer::Transfer(const Image &image, int target_width, int target_height) const {
 	ncnn::Mat in = Image2Mat<ncnn::Mat::PIXEL_RGB>(image, target_width, target_height);
 	ncnn::Mat out;
 	{

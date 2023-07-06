@@ -30,11 +30,9 @@ public:
 	};
 
 public:
-	constexpr AlignedAllocator() noexcept = default;
+	inline constexpr AlignedAllocator() noexcept = default;
 
-	constexpr AlignedAllocator(const AlignedAllocator &) noexcept = default;
-
-	template <typename U> constexpr AlignedAllocator(AlignedAllocator<U, ALIGNMENT_IN_BYTES> const &) noexcept {}
+	inline constexpr AlignedAllocator(const AlignedAllocator &) noexcept = default;
 
 	[[nodiscard]] ElementType *allocate(std::size_t nElementsToAllocate) {
 		/* if (nElementsToAllocate > std::numeric_limits<std::size_t>::max() / sizeof(ElementType)) {

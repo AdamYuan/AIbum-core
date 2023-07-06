@@ -8,11 +8,16 @@ namespace aibum {
 
 class StyleTransfer {
 public:
+	inline StyleTransfer() = default;
 #ifndef AIBUM_CORE_WASM
-	explicit StyleTransfer(const char *model_path);
+	void LoadFromFile(const char *model_path);
+	inline explicit StyleTransfer(const char *model_path) { LoadFromFile(model_path); }
 #endif
-	explicit StyleTransfer(const unsigned char *model_bin);
-	ncnn::Mat Transfer(const Image &image, int target_width, int target_height);
+	void LoadFromMemory(const unsigned char *model_bin);
+	inline explicit StyleTransfer(const unsigned char *model_bin) { LoadFromMemory(model_bin); }
+
+	ncnn::Mat Transfer(const Image &image, int target_width, int target_height) const;
+	inline void Clear() { m_net.clear(); }
 
 private:
 	ncnn::Net m_net;

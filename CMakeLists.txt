@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
 project(aibum-core)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 
 option(AIBUM_WASM_ONLY "build WASM only" ON)
 option(AIBUM_WASM_SIMD "build WASM with SIMD enabled" ON)
@@ -95,6 +95,7 @@ else ()
 			-sALLOW_MEMORY_GROWTH
 			-flto
 			-sTOTAL_MEMORY=512MB
+			-sEXIT_RUNTIME=1
 			)
 
 	if (AIBUM_WASM_SIMD)
