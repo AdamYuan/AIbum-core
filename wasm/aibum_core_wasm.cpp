@@ -1,10 +1,10 @@
 #include <emscripten/bind.h>
-#include <emscripten/html5.h>
 
 #include "aligned_allocator.hpp"
 
 #define STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_STATIC
+#define STBI_NO_STDIO
 #define STBI_NO_BMP
 #define STBI_NO_PSD
 #define STBI_NO_TGA
@@ -12,6 +12,9 @@
 #define STBI_NO_HDR
 #define STBI_NO_PIC
 #define STBI_NO_PNM
+#ifdef AIBUM_WASM_SIMD
+#define STBI__X86_TARGET
+#endif
 #include <stb_image.h>
 
 #include <FaceNet.hpp>
