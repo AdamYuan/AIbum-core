@@ -147,6 +147,8 @@ public:
 	}
 	inline bool valid() const { return !m_model_bin.empty(); }
 	inline WASMImage transfer(const WASMImage &image, int target_size) const {
+		if (!valid())
+			return {};
 		int target_w, target_h;
 		if (image.getWidth() < image.getHeight()) {
 			target_h = target_size;
@@ -180,7 +182,7 @@ EMSCRIPTEN_BINDINGS(AIbumCore) {
 	    .constructor()
 	    .constructor<const e::val &>()
 	    .function("load", &WASMImage::load)
-		.function("free", &WASMImage::free)
+	    .function("free", &WASMImage::free)
 	    .property("width", &WASMImage::getWidth)
 	    .property("height", &WASMImage::getHeight)
 	    .property("data", &WASMImage::getData)
