@@ -27,9 +27,9 @@ namespace e = emscripten;
 
 template <typename Func> inline std::invoke_result_t<Func> run_func(Func &&func) {
 #ifdef AIBUM_WASM_THREADS
-	auto future = worker.enqueue(func);
+	auto future = worker.enqueue(std::forward<Func>(func));
 	return future.get();
-#elif
+#else
 	return func();
 #endif
 }
