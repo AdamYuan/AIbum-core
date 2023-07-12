@@ -9,9 +9,16 @@
 
 namespace aibum {
 
-SCRFD::SCRFD() {
+#ifndef AIBUM_CORE_WASM
+void SCRFD::LoadFromFile(const char *model_path) {
 	m_net.load_param(scrfd_param_bin);
-	m_net.load_model(scrfd_bin);
+	m_net.load_model(model_path);
+}
+#endif
+
+void SCRFD::LoadFromMemory(const unsigned char *model_bin) {
+	m_net.load_param(scrfd_param_bin);
+	m_net.load_model(model_bin);
 }
 
 std::vector<FaceBox> SCRFD::Detect(const Image &image) const {

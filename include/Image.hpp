@@ -5,7 +5,7 @@
 namespace aibum {
 
 struct Image {
-	unsigned char *data;
+	const unsigned char *data;
 	int width, height;
 	ncnn::Mat::PixelType pixel_type;
 };

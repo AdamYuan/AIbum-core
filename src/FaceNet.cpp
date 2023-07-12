@@ -1,16 +1,22 @@
 #include <FaceNet.hpp>
 
+#include <cmath>
 #include <mobilefacenet.id.h>
 #include <mobilefacenet.mem.h>
-#include <cmath>
 
 #include "Util.hpp"
 
 namespace aibum {
 
-FaceNet::FaceNet() {
+#ifndef AIBUM_CORE_WASM
+void FaceNet::LoadFromFile(const char *model_path) {
 	m_net.load_param(mobilefacenet_param_bin);
-	m_net.load_model(mobilefacenet_bin);
+	m_net.load_model(model_path);
+}
+#endif
+void FaceNet::LoadFromMemory(const unsigned char *model_bin) {
+	m_net.load_param(mobilefacenet_param_bin);
+	m_net.load_model(model_bin);
 }
 
 FaceFeature FaceNet::GetFeature(const Image &image) const {

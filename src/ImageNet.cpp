@@ -7,9 +7,16 @@
 
 namespace aibum {
 
-ImageNet::ImageNet() {
+#ifndef AIBUM_CORE_WASM
+void ImageNet::LoadFromFile(const char *model_path) {
 	m_net.load_param(efficientnet_b0_fp16_param_bin);
-	m_net.load_model(efficientnet_b0_fp16_bin);
+	m_net.load_model(model_path);
+}
+#endif
+
+void ImageNet::LoadFromMemory(const unsigned char *model_bin) {
+	m_net.load_param(efficientnet_b0_fp16_param_bin);
+	m_net.load_model(model_bin);
 }
 
 std::vector<Tag> ImageNet::GetTags(const Image &image, int count) const {

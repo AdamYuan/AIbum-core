@@ -12,7 +12,14 @@ struct Tag {
 
 class ImageNet {
 public:
-	ImageNet();
+	inline ImageNet() = default;
+#ifndef AIBUM_CORE_WASM
+	void LoadFromFile(const char *model_path);
+	inline explicit ImageNet(const char *model_path) { LoadFromFile(model_path); }
+#endif
+	void LoadFromMemory(const unsigned char *model_bin);
+	inline explicit ImageNet(const unsigned char *model_bin) { LoadFromMemory(model_bin); }
+
 	std::vector<Tag> GetTags(const Image &image, int count) const;
 	inline void Clear() { m_net.clear(); }
 

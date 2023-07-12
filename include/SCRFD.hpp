@@ -12,7 +12,14 @@ struct FaceBox {
 
 class SCRFD {
 public:
-	SCRFD();
+	inline SCRFD() = default;
+#ifndef AIBUM_CORE_WASM
+	void LoadFromFile(const char *model_path);
+	inline explicit SCRFD(const char *model_path) { LoadFromFile(model_path); }
+#endif
+	void LoadFromMemory(const unsigned char *model_bin);
+	inline explicit SCRFD(const unsigned char *model_bin) { LoadFromMemory(model_bin); }
+
 	std::vector<FaceBox> Detect(const Image &image) const;
 	inline void Clear() { m_net.clear(); }
 

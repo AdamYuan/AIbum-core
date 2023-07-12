@@ -14,9 +14,6 @@ add_library(aibum_core STATIC
 		src/FaceNet.cpp
 		src/ImageNet.cpp
 		src/StyleTransfer.cpp
-		models/src/mobilefacenet.mem.c
-		models/src/efficientnet_b0_fp16.bin.c
-		models/src/scrfd.mem.c
 		)
 target_include_directories(aibum_core PUBLIC include PRIVATE models/include)
 
@@ -95,7 +92,9 @@ else ()
 			-sALLOW_MEMORY_GROWTH
 			-flto
 			-sTOTAL_MEMORY=512MB
-			-sEXIT_RUNTIME=1
+			# -sEXIT_RUNTIME=1
+			-sASYNCIFY
+			# -sASYNCIFY_ONLY=["WASMImageNet::getTags\(WASMImage const&, int\) const","WASMFaceNet::getFaces\(WASMImage const&\) const"]
 			)
 
 	if (AIBUM_WASM_SIMD)

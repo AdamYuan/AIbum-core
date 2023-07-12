@@ -38,6 +38,7 @@ public:
 	explicit ThreadPool(size_t);
 	template <class F, class... Args>
 	auto enqueue(F &&f, Args &&...args) -> std::future<std::invoke_result_t<F, Args...>>;
+	inline std::size_t size() const { return tasks.size(); }
 	~ThreadPool();
 
 private:

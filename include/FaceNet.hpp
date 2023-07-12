@@ -16,7 +16,14 @@ struct Face {
 
 class FaceNet {
 public:
-	FaceNet();
+	inline FaceNet() = default;
+#ifndef AIBUM_CORE_WASM
+	void LoadFromFile(const char *model_path);
+	inline explicit FaceNet(const char *model_path) { LoadFromFile(model_path); }
+#endif
+	void LoadFromMemory(const unsigned char *model_bin);
+	inline explicit FaceNet(const unsigned char *model_bin) { LoadFromMemory(model_bin); }
+
 	FaceFeature GetFeature(const Image &image) const;
 	std::vector<Face> GetFaces(const SCRFD &scrfd, const Image &image) const;
 	inline void Clear() { m_net.clear(); }
