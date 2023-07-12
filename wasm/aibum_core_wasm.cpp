@@ -212,6 +212,9 @@ EMSCRIPTEN_BINDINGS(AIbumCore) {
 	e::function(
 	    "getFaces", +[](const WASMImage &image) { return face_net.getFaces(image); });
 	e::function(
+	    "transferStyle",
+	    +[](const WASMImage &image, int target_size) { return style_transfer.transfer(image, target_size); });
+	e::function(
 	    "loadImageNet", +[](const e::val &fetcher, const std::string &uri) { image_net.load(fetcher, uri); });
 	e::function(
 	    "loadFaceNet", +[](const e::val &fetcher, const std::string &scrfd_uri, const std::string &facenet_uri) {
