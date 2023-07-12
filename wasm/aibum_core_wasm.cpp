@@ -24,23 +24,7 @@
 #include <ImageNet.hpp>
 #include <StyleTransfer.hpp>
 
-#ifdef AIBUM_WASM_THREADS
-#include "worker.hpp"
-static ThreadPool worker(1);
-#endif
-
 namespace e = emscripten;
-
-template <typename Func> inline std::invoke_result_t<Func> run_func(Func &&func) {
-#ifdef AIBUM_WASM_THREADS
-	std::future<std::invoke_result_t<Func>> future = worker.enqueue(std::forward<Func>(func));
-	while (future.wait_for(std::chrono::seconds(0)) != std::future_status::ready)
-		emscripten_sleep(20);
-	return future.get();
-#else
-	return func();
-#endif
-}
 
 template <typename T, typename Allocator = std::allocator<T>>
 inline void js_array_to_vec(const e::val &v, std::vector<T, Allocator> *p_vec) {
@@ -129,7 +113,7 @@ public:
 	inline e::val getTags(const WASMImage &image, int count) const {
 		if (!image.valid())
 			return e::val::array();
-		auto tags = run_func([this, &image, count]() { return m_image_net.GetTags(image.GetImage(), count); });
+		auto tags = m_image_net.GetTags(image.GetImage(), count);
 		return e::val::array(tags.begin(), tags.end());
 	}
 };
@@ -150,7 +134,7 @@ public:
 	inline e::val getFaces(const WASMImage &image) const {
 		if (!image.valid())
 			return e::val::array();
-		auto faces = run_func([this, &image]() { return m_face_net.GetFaces(m_detector, image.GetImage()); });
+		auto faces = m_face_net.GetFaces(m_detector, image.GetImage());
 		std::vector<WASMFace> wasm_faces;
 		wasm_faces.reserve(faces.size());
 		for (const auto &face : faces)
@@ -178,9 +162,7 @@ public:
 			target_w = target_size;
 			target_h = target_size * image.getHeight() / image.getWidth();
 		}
-		auto result = run_func([this, &image, target_w, target_h]() {
-			return m_style_transfer.Transfer(image.GetImage(), target_w, target_h);
-		});
+		auto result = m_style_transfer.Transfer(image.GetImage(), target_w, target_h);
 		return WASMImage{result};
 	}
 };
