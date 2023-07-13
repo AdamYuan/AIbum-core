@@ -77,10 +77,12 @@ public:
 
 class WASM4AFetcher {
 private:
+	std::size_t m_desired_size;
 	std::string m_uri;
 	std::vector<uint8_t, AlignedAllocator<uint8_t, 4>> m_bin;
 
 public:
+	inline explicit WASM4AFetcher(std::size_t desired_size) : m_desired_size{desired_size} {}
 	template <typename Model> inline bool Fetch(Model *p_model, const e::val &fetcher, const std::string &uri) {
 		if (m_uri == uri)
 			return true;
@@ -90,6 +92,9 @@ public:
 			return false;
 
 		js_array_to_vec<uint8_t, AlignedAllocator<uint8_t, 4>>(u8_array, &m_bin);
+		if (m_bin.size() != m_desired_size)
+			return false;
+
 		m_uri = uri;
 		p_model->Clear();
 		p_model->LoadFromMemory(m_bin.data());
@@ -103,7 +108,7 @@ private:
 	WASM4AFetcher m_fetcher;
 
 public:
-	inline WASMImageNet() : m_image_net() {}
+	inline WASMImageNet() : m_image_net(), m_fetcher(10598104) {}
 	inline bool load(const e::val &fetcher, const std::string &uri) {
 		return m_fetcher.Fetch(&m_image_net, fetcher, uri);
 	}
@@ -122,7 +127,7 @@ private:
 	WASM4AFetcher m_scrfd_fetcher, m_facenet_fetcher;
 
 public:
-	inline WASMFaceNet() : m_detector(), m_face_net() {}
+	inline WASMFaceNet() : m_detector(), m_face_net(), m_scrfd_fetcher(1196684), m_facenet_fetcher(4091592) {}
 	inline bool load(const e::val &fetcher, const std::string &scrfd_uri, const std::string &facenet_uri) {
 		bool scrfd_success = m_scrfd_fetcher.Fetch(&m_detector, fetcher, scrfd_uri);
 		bool facenet_success = m_facenet_fetcher.Fetch(&m_face_net, fetcher, facenet_uri);
@@ -146,7 +151,7 @@ private:
 	WASM4AFetcher m_fetcher;
 
 public:
-	inline WASMStyleTransfer() = default;
+	inline WASMStyleTransfer() : m_style_transfer(), m_fetcher(3368140) {}
 	inline bool load(const e::val &fetcher, const std::string &uri) {
 		return m_fetcher.Fetch(&m_style_transfer, fetcher, uri);
 	}
