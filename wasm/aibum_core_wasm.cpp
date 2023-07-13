@@ -1,7 +1,4 @@
 #include <emscripten/bind.h>
-#include <emscripten/fetch.h>
-#include <emscripten/threading.h>
-#include <emscripten/wasm_worker.h>
 
 #include "aligned_allocator.hpp"
 

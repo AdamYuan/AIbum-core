@@ -92,9 +92,8 @@ else ()
 			-sALLOW_MEMORY_GROWTH
 			-flto
 			-sTOTAL_MEMORY=512MB
-			# -sEXIT_RUNTIME=1
-			-sASYNCIFY
-			# -sASYNCIFY_ONLY=["WASMImageNet::getTags\(WASMImage const&, int\) const","WASMFaceNet::getFaces\(WASMImage const&\) const"]
+			-sASYNCIFY=1
+			-sFILESYSTEM=0
 			)
 
 	if (AIBUM_WASM_SIMD)
