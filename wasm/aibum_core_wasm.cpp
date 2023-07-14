@@ -127,7 +127,7 @@ private:
 	WASM4AFetcher m_scrfd_fetcher, m_facenet_fetcher;
 
 public:
-	inline WASMFaceNet() : m_detector(), m_face_net(), m_scrfd_fetcher(1196684), m_facenet_fetcher(4091592) {}
+	inline WASMFaceNet() : m_detector(), m_face_net(), m_scrfd_fetcher(1640500), m_facenet_fetcher(4091592) {}
 	inline bool load(const e::val &fetcher, const std::string &scrfd_uri, const std::string &facenet_uri) {
 		bool scrfd_success = m_scrfd_fetcher.Fetch(&m_detector, fetcher, scrfd_uri);
 		bool facenet_success = m_facenet_fetcher.Fetch(&m_face_net, fetcher, facenet_uri);
