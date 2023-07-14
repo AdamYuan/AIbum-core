@@ -16,6 +16,9 @@ int main(int argc, char **argv) {
 	aibum::SCRFD scrfd{};
 	aibum::FaceNet face_net{};
 
+	scrfd.LoadFromFile("./models/scrfd_2.5g_kps-opt2.bin");
+	face_net.LoadFromFile("./models/mobilefacenet.bin");
+
 	cv::Mat img1 = cv::imread(argv[0]), img2 = cv::imread(argv[1]);
 	std::vector<aibum::Face> faces1 = face_net.GetFaces(scrfd, {img1.data, img1.cols, img1.rows, ncnn::Mat::PIXEL_BGR}),
 	                         faces2 = face_net.GetFaces(scrfd, {img2.data, img2.cols, img2.rows, ncnn::Mat::PIXEL_BGR});

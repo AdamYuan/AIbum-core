@@ -2,8 +2,8 @@
 #include <algorithm>
 #include <cmath>
 
+#include <scrfd.bin.h>
 #include <scrfd.id.h>
-#include <scrfd.mem.h>
 
 #include "Util.hpp"
 
@@ -58,11 +58,12 @@ std::vector<FaceBox> SCRFD::Detect(const Image &image) const {
 
 	std::vector<BBox> face_proposals;
 
-	// stride 32
+	// stride 8
 	{
-		ncnn::Mat score_blob, bbox_blob;
-		ex.extract(scrfd_param_id::BLOB_412, score_blob);
-		ex.extract(scrfd_param_id::BLOB_415, bbox_blob);
+		ncnn::Mat score_blob, bbox_blob, kps_blob;
+		ex.extract(scrfd_param_id::BLOB_score_8, score_blob);
+		ex.extract(scrfd_param_id::BLOB_bbox_8, bbox_blob);
+		ex.extract(scrfd_param_id::BLOB_kps_8, kps_blob);
 
 		const int base_size = 16;
 		const int feat_stride = 8;
@@ -74,15 +75,16 @@ std::vector<FaceBox> SCRFD::Detect(const Image &image) const {
 		ncnn::Mat anchors = generate_anchors(base_size, ratios, scales);
 
 		std::vector<BBox> faceobjects32 =
-		    generate_proposals(anchors, feat_stride, score_blob, bbox_blob, kProbThreshold);
+		    generate_proposals(anchors, feat_stride, score_blob, bbox_blob, kps_blob, kProbThreshold);
 		face_proposals.insert(face_proposals.end(), faceobjects32.begin(), faceobjects32.end());
 	}
 
 	// stride 16
 	{
-		ncnn::Mat score_blob, bbox_blob;
-		ex.extract(scrfd_param_id::BLOB_474, score_blob);
-		ex.extract(scrfd_param_id::BLOB_477, bbox_blob);
+		ncnn::Mat score_blob, bbox_blob, kps_blob;
+		ex.extract(scrfd_param_id::BLOB_score_16, score_blob);
+		ex.extract(scrfd_param_id::BLOB_bbox_16, bbox_blob);
+		ex.extract(scrfd_param_id::BLOB_kps_16, kps_blob);
 
 		const int base_size = 64;
 		const int feat_stride = 16;
@@ -94,15 +96,16 @@ std::vector<FaceBox> SCRFD::Detect(const Image &image) const {
 		ncnn::Mat anchors = generate_anchors(base_size, ratios, scales);
 
 		std::vector<BBox> faceobjects16 =
-		    generate_proposals(anchors, feat_stride, score_blob, bbox_blob, kProbThreshold);
+		    generate_proposals(anchors, feat_stride, score_blob, bbox_blob, kps_blob, kProbThreshold);
 		face_proposals.insert(face_proposals.end(), faceobjects16.begin(), faceobjects16.end());
 	}
 
-	// stride 8
+	// stride 32
 	{
-		ncnn::Mat score_blob, bbox_blob;
-		ex.extract(scrfd_param_id::BLOB_536, score_blob);
-		ex.extract(scrfd_param_id::BLOB_539, bbox_blob);
+		ncnn::Mat score_blob, bbox_blob, kps_blob;
+		ex.extract(scrfd_param_id::BLOB_score_32, score_blob);
+		ex.extract(scrfd_param_id::BLOB_bbox_32, bbox_blob);
+		ex.extract(scrfd_param_id::BLOB_kps_32, kps_blob);
 
 		const int base_size = 256;
 		const int feat_stride = 32;
@@ -114,7 +117,7 @@ std::vector<FaceBox> SCRFD::Detect(const Image &image) const {
 		ncnn::Mat anchors = generate_anchors(base_size, ratios, scales);
 
 		std::vector<BBox> faceobjects8 =
-		    generate_proposals(anchors, feat_stride, score_blob, bbox_blob, kProbThreshold);
+		    generate_proposals(anchors, feat_stride, score_blob, bbox_blob, kps_blob, kProbThreshold);
 		face_proposals.insert(face_proposals.end(), faceobjects8.begin(), faceobjects8.end());
 	}
 
@@ -131,33 +134,47 @@ std::vector<FaceBox> SCRFD::Detect(const Image &image) const {
 	for (int i = 0; i < face_count; i++) {
 		const BBox &rect = face_proposals[picked[i]];
 
-		// adjust offset to original unpadded
-		float x0 = (rect.x - float(wpad) * 0.5f) / scale;
-		float y0 = (rect.y - float(hpad) * 0.5f) / scale;
-		float x1 = (rect.x + rect.width - float(wpad) * 0.5f) / scale;
-		float y1 = (rect.y + rect.height - float(hpad) * 0.5f) / scale;
+		{
+			// adjust offset to original unpadded
+			float x0 = (rect.x - float(wpad) * 0.5f) / scale;
+			float y0 = (rect.y - float(hpad) * 0.5f) / scale;
+			float x1 = (rect.x + rect.width - float(wpad) * 0.5f) / scale;
+			float y1 = (rect.y + rect.height - float(hpad) * 0.5f) / scale;
+			// Bound
+			int ix0 = std::max((int)x0, 0);
+			int ix1 = std::min((int)x1, image.width);
+			int iy0 = std::max((int)y0, 0);
+			int iy1 = std::min((int)y1, image.height);
 
-		// Square
-		float xs = x1 - x0 + 1.0f;
-		float ys = y1 - y0 + 1.0f;
-		float max_side = std::max(xs, ys);
-		x0 = x0 + xs * 0.5f - max_side * 0.5f;
-		y0 = y0 + ys * 0.5f - max_side * 0.5f;
-		int ix1 = (int)std::lround(x0 + max_side - 1);
-		int iy1 = (int)std::lround(y0 + max_side - 1);
-		int ix0 = (int)std::lround(x0);
-		int iy0 = (int)std::lround(y0);
+			face_boxes[i].x = ix0;
+			face_boxes[i].y = iy0;
+			face_boxes[i].w = ix1 - ix0;
+			face_boxes[i].h = iy1 - iy0;
+		}
 
-		// Bound
-		ix0 = std::max(ix0, 0);
-		ix1 = std::min(ix1, image.width);
-		iy0 = std::max(iy0, 0);
-		iy1 = std::min(iy1, image.height);
+		{
+			float x0 = (rect.landmarks[0].x - float(wpad * 0.5)) / scale;
+			float y0 = (rect.landmarks[0].y - float(hpad * 0.5)) / scale;
+			float x1 = (rect.landmarks[1].x - float(wpad * 0.5)) / scale;
+			float y1 = (rect.landmarks[1].y - float(hpad * 0.5)) / scale;
+			float x2 = (rect.landmarks[2].x - float(wpad * 0.5)) / scale;
+			float y2 = (rect.landmarks[2].y - float(hpad * 0.5)) / scale;
+			float x3 = (rect.landmarks[3].x - float(wpad * 0.5)) / scale;
+			float y3 = (rect.landmarks[3].y - float(hpad * 0.5)) / scale;
+			float x4 = (rect.landmarks[4].x - float(wpad * 0.5)) / scale;
+			float y4 = (rect.landmarks[4].y - float(hpad * 0.5)) / scale;
 
-		face_boxes[i].x = ix0;
-		face_boxes[i].y = iy0;
-		face_boxes[i].w = ix1 - ix0;
-		face_boxes[i].h = iy1 - iy0;
+			face_boxes[i].landmarks[0].x = std::max(std::min(x0, (float)image.width), 0.f);
+			face_boxes[i].landmarks[0].y = std::max(std::min(y0, (float)image.height), 0.f);
+			face_boxes[i].landmarks[1].x = std::max(std::min(x1, (float)image.width), 0.f);
+			face_boxes[i].landmarks[1].y = std::max(std::min(y1, (float)image.height), 0.f);
+			face_boxes[i].landmarks[2].x = std::max(std::min(x2, (float)image.width), 0.f);
+			face_boxes[i].landmarks[2].y = std::max(std::min(y2, (float)image.height), 0.f);
+			face_boxes[i].landmarks[3].x = std::max(std::min(x3, (float)image.width), 0.f);
+			face_boxes[i].landmarks[3].y = std::max(std::min(y3, (float)image.height), 0.f);
+			face_boxes[i].landmarks[4].x = std::max(std::min(x4, (float)image.width), 0.f);
+			face_boxes[i].landmarks[4].y = std::max(std::min(y4, (float)image.height), 0.f);
+		}
 	}
 
 	return face_boxes;
@@ -234,7 +251,7 @@ ncnn::Mat SCRFD::generate_anchors(int base_size, const ncnn::Mat &ratios, const 
 
 std::vector<SCRFD::BBox> SCRFD::generate_proposals(const ncnn::Mat &anchors, int feat_stride,
                                                    const ncnn::Mat &score_blob, const ncnn::Mat &bbox_blob,
-                                                   float prob_threshold) {
+                                                   const ncnn::Mat &kps_blob, float prob_threshold) {
 	int w = score_blob.w;
 	int h = score_blob.h;
 
@@ -248,6 +265,7 @@ std::vector<SCRFD::BBox> SCRFD::generate_proposals(const ncnn::Mat &anchors, int
 
 		const ncnn::Mat score = score_blob.channel(q);
 		const ncnn::Mat bbox = bbox_blob.channel_range(q * 4, 4);
+		const ncnn::Mat kps = kps_blob.channel_range(q * 10, 10);
 
 		// shifted anchor
 		float anchor_y = anchor[1];
@@ -278,6 +296,19 @@ std::vector<SCRFD::BBox> SCRFD::generate_proposals(const ncnn::Mat &anchors, int
 					float y1 = cy + dh;
 
 					proposals.push_back({x0, y0, x1 - x0 + 1, y1 - y0 + 1, prob});
+
+					auto &obj = proposals.back();
+
+					obj.landmarks[0].x = cx + kps.channel(0)[index] * (float)feat_stride;
+					obj.landmarks[0].y = cy + kps.channel(1)[index] * (float)feat_stride;
+					obj.landmarks[1].x = cx + kps.channel(2)[index] * (float)feat_stride;
+					obj.landmarks[1].y = cy + kps.channel(3)[index] * (float)feat_stride;
+					obj.landmarks[2].x = cx + kps.channel(4)[index] * (float)feat_stride;
+					obj.landmarks[2].y = cy + kps.channel(5)[index] * (float)feat_stride;
+					obj.landmarks[3].x = cx + kps.channel(6)[index] * (float)feat_stride;
+					obj.landmarks[3].y = cy + kps.channel(7)[index] * (float)feat_stride;
+					obj.landmarks[4].x = cx + kps.channel(8)[index] * (float)feat_stride;
+					obj.landmarks[4].y = cy + kps.channel(9)[index] * (float)feat_stride;
 				}
 
 				anchor_x += (float)feat_stride;

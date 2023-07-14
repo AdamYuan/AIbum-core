@@ -24,6 +24,21 @@ FaceFeature FaceNet::GetFeature(const Image &image) const {
 	return get_feature_rgb_112_112(in);
 }
 
+inline static std::tuple<std::array<float, 6>, int> get_alignment_matrix(const aibum::FaceBox &box, float scale) {
+	auto [nose_x, nose_y] = box.landmarks[2];
+	auto [left_eye_x, left_eye_y] = box.landmarks[0];
+	auto [right_eye_x, right_eye_y] = box.landmarks[1];
+	float eye_dx = right_eye_x - left_eye_x, eye_dy = right_eye_y - left_eye_y;
+	float angle = std::atan2(eye_dy, eye_dx);
+	float alpha = std::cos(angle), beta = std::sin(angle);
+	float w = std::sqrt(eye_dx * eye_dx + eye_dy * eye_dy) * scale;
+	std::array<float, 6> mat = {alpha, beta,  -alpha * nose_x - beta * nose_y + w * 0.5f,
+	                            -beta, alpha, beta * nose_x - alpha * nose_y + w * 0.5f};
+	std::array<float, 6> inv_mat;
+	ncnn::invert_affine_transform(mat.data(), inv_mat.data());
+	return {inv_mat, (int)w};
+}
+
 std::vector<Face> FaceNet::GetFaces(const SCRFD &scrfd, const Image &image) const {
 
 	std::vector<FaceBox> face_boxes = scrfd.Detect(image);
@@ -33,10 +48,30 @@ std::vector<Face> FaceNet::GetFaces(const SCRFD &scrfd, const Image &image) cons
 	ncnn::Mat mat = Image2Mat<ncnn::Mat::PIXEL_RGB>(image, image.width, image.height);
 
 	for (auto face_box : face_boxes) {
-		ncnn::Mat part, in;
-		ncnn::copy_cut_border(mat, part, face_box.y, image.height - face_box.y - face_box.h, face_box.x,
-		                      image.width - face_box.x - face_box.w);
-		ncnn::resize_bilinear(part, in, 112, 112);
+		auto [matrix, w] = get_alignment_matrix(face_box, 2.5f);
+		ncnn::Mat in;
+
+		switch (image.pixel_type) {
+		case ncnn::Mat::PIXEL_GRAY: {
+			std::vector<unsigned char> face_data(w * w);
+			ncnn::warpaffine_bilinear_c1(image.data, image.width, image.height, face_data.data(), w, w, matrix.data());
+			in = Image2Mat<ncnn::Mat::PIXEL_RGB>({face_data.data(), w, w, image.pixel_type}, 112, 112);
+			break;
+		}
+		case ncnn::Mat::PIXEL_RGB:
+		case ncnn::Mat::PIXEL_BGR: {
+			std::vector<unsigned char> face_data(w * w * 3);
+			ncnn::warpaffine_bilinear_c3(image.data, image.width, image.height, face_data.data(), w, w, matrix.data());
+			in = Image2Mat<ncnn::Mat::PIXEL_RGB>({face_data.data(), w, w, image.pixel_type}, 112, 112);
+			break;
+		}
+		default: {
+			std::vector<unsigned char> face_data(w * w * 4);
+			ncnn::warpaffine_bilinear_c4(image.data, image.width, image.height, face_data.data(), w, w, matrix.data());
+			in = Image2Mat<ncnn::Mat::PIXEL_RGB>({face_data.data(), w, w, image.pixel_type}, 112, 112);
+			break;
+		}
+		}
 
 		faces.push_back({face_box.x, face_box.y, face_box.w, face_box.h, get_feature_rgb_112_112(in)});
 	}

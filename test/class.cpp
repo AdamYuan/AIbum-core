@@ -10,6 +10,8 @@ int main(int argc, char **argv) {
 
 	aibum::ImageNet image_net{};
 
+	image_net.LoadFromFile("./models/efficientnet_b0_fp16.bin");
+
 	cv::Mat image = cv::imread(argv[0]);
 	auto tags = image_net.GetTags({image.data, image.cols, image.rows, ncnn::Mat::PIXEL_BGR}, 5);
 
