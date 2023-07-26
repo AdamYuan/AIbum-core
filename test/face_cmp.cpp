@@ -26,6 +26,11 @@ int main(int argc, char **argv) {
 	printf("faces1: %ld\nfaces2: %ld\n", faces1.size(), faces2.size());
 
 	for (const auto &f1 : faces1) {
+		for (int i = 0; i < 128; ++i)
+			printf("%f, ", f1.feature[i]);
+		printf("\n");
+	}
+	for (const auto &f1 : faces1) {
 		for (const auto &f2 : faces2) {
 			float sim = (cosine(f1.feature, f2.feature) + 1.0f) * 0.5f;
 			printf("Similarity %f ", sim);
