@@ -91,7 +91,7 @@ else ()
 			-sEXPORT_NAME=loadAIbumCore
 			-sALLOW_MEMORY_GROWTH
 			-flto
-			-sTOTAL_MEMORY=1GB
+			-sTOTAL_MEMORY=512MB
 			-sASYNCIFY=1
 			-sFILESYSTEM=0
 			)

@@ -173,7 +173,12 @@ static WASMImageNet image_net;
 static WASMFaceNet face_net;
 static WASMStyleTransfer style_transfer;
 
+struct WASMInfo {
+	e::val tags, faces;
+};
+
 EMSCRIPTEN_BINDINGS(AIbumCore) {
+	e::value_object<WASMInfo>("Info").field("tags", &WASMInfo::tags).field("faces", &WASMInfo::faces);
 	e::value_object<WASMFace>("Face")
 	    .field("x", &WASMFace::x)
 	    .field("y", &WASMFace::y)
@@ -183,21 +188,34 @@ EMSCRIPTEN_BINDINGS(AIbumCore) {
 	e::value_object<aibum::Tag>("Tag").field("index", &aibum::Tag::index).field("score", &aibum::Tag::score);
 
 	e::class_<WASMImage>("Image")
-	    .constructor()
+	    /* .constructor()
 	    .constructor<const e::val &>()
-	    .function("load", &WASMImage::load)
+	    .function("load", &WASMImage::load) */
 	    .property("width", &WASMImage::getWidth)
 	    .property("height", &WASMImage::getHeight)
 	    .property("data", &WASMImage::getData)
 	    .property("valid", &WASMImage::valid);
 
 	e::function(
-	    "getTags", +[](const WASMImage &image, int count) { return image_net.getTags(image, count); });
+	    "getInfo", +[](const e::val &u8_array, int tag_count) {
+		    WASMImage image{u8_array};
+		    WASMInfo ret;
+		    if (image.valid()) {
+			    ret.tags = image_net.getTags(image, tag_count);
+			    ret.faces = face_net.getFaces(image);
+		    } else {
+			    ret.tags = e::val::null();
+			    ret.faces = e::val::null();
+		    }
+		    return ret;
+	    });
 	e::function(
-	    "getFaces", +[](const WASMImage &image) { return face_net.getFaces(image); });
-	e::function(
-	    "transferStyle",
-	    +[](const WASMImage &image, int target_size) { return style_transfer.transfer(image, target_size); });
+	    "transferStyle", +[](const e::val &u8_array, int target_size) {
+		    WASMImage image{u8_array};
+		    if (!image.valid())
+			    return WASMImage{};
+		    return style_transfer.transfer(image, target_size);
+	    });
 	e::function(
 	    "loadImageNet", +[](const e::val &fetcher, const std::string &uri) { image_net.load(fetcher, uri); });
 	e::function(
